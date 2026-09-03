@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0f">
+  <title>ZEPHYR - الدردشة</title>
+
+  <!-- Firebase SDK 10.8.0 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      query,
+      orderBy,
+      onSnapshot,
+      serverTimestamp,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc,
+      arrayUnion,
+      arrayRemove,
+      where,
+      getDocs,
+      runTransaction
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-stk7sia-kJ_PzVMuSI5gmyqR5yTtR_A",
+      authDomain: "zephyr-8df18.firebaseapp.com",
+      projectId: "zephyr-8df18",
+      storageBucket: "zephyr-8df18.firebasestorage.app",
+      messagingSenderId: "836989543748",
+      appId: "1:836989543748:web:fc07d9e4a79172482ce311"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.ZephyrChat = {
+      auth,
+      db,
+      onAuthStateChanged,
+      collection,
+      addDoc,
+      query,
+      orderBy,
+      onSnapshot,
+      serverTimestamp,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc,
+      arrayUnion,
+      arrayRemove,
+      where,
+      getDocs,
+      runTransaction
+    };
+  </script>
+
+  <style>
+    /* ====== نفس هوية ZEPHYR (Gamer / Neon) المطابقة لصفحتي الريلز والبروفايل ====== */
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+    :root {
+      --bg-main: #0a0a0f;
+      --bg-card: rgba(10, 10, 20, 0.88);
+      --bg-input: rgba(0, 0, 0, 0.8);
+      --primary: #00e5ff;
+      --primary-hover: #00b8d4;
+      --primary-glow: rgba(0, 229, 255, 0.55);
+      --accent: #ff00e5;
+      --accent-glow: rgba(255, 0, 229, 0.45);
+      --gold: #ffcc00;
+      --text-main: #f0f8ff;
+      --text-muted: #a0b0c0;
+      --border-color: rgba(0, 229, 255, 0.32);
+      --danger: #ef4444;
+      --success: #10b981;
+      --bubble-mine: linear-gradient(135deg, var(--primary), var(--accent));
+      --bubble-other: rgba(255, 255, 255, 0.06);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 22px;
+      --radius-bubble: 20px;
+      --radius-pill: 999px;
+      --nav-height: 64px;
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --font-display: 'Orbitron', sans-serif;
+      --font-body: 'Rajdhani', sans-serif;
+      --glow-soft: 0 0 18px var(--primary-glow);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: var(--font-body); }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg-main);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background-image:
+        radial-gradient(circle at 10% 0%, rgba(0, 229, 255, 0.07) 0%, transparent 45%),
+        radial-gradient(circle at 90% 90%, rgba(255, 0, 229, 0.05) 0%, transparent 50%);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ====== الهيدر ====== */
+    .chat-header {
+      padding: 12px 16px;
+      background: linear-gradient(to bottom, rgba(10,10,15,0.95), rgba(10,10,15,0.7));
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(0,229,255,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .chat-header h1 {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      background: linear-gradient(to right, #00e5ff, #ff00e5, #ffcc00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .chat-header-actions { display: flex; gap: 6px; }
+    .icon-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 7px;
+      border-radius: 50%;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-btn:hover { color: var(--primary); background: rgba(0,229,255,0.08); }
+    .icon-btn svg { width: 21px; height: 21px; fill: currentColor; }
+
+    /* ====== القسم الرئيسي ====== */
+    .chat-main { flex: 1; display: flex; overflow: hidden; position: relative; }
+
+    /* ====== قائمة المحادثات ====== */
+    .chat-list {
+      width: 100%;
+      max-width: 380px;
+      background: transparent;
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+      transition: var(--transition);
+    }
+    .chat-list-header { padding: 10px 16px; border-bottom: 1px solid rgba(0,229,255,0.1); }
+    .chat-list-header input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-pill);
+      padding: 10px 16px;
+      color: #fff;
+      font-size: 0.85rem;
+      outline: none;
+      transition: var(--transition);
+      font-family: var(--font-body);
+    }
+    .chat-list-header input:focus { border-color: var(--primary); box-shadow: var(--glow-soft); }
+    .chat-list-header input::placeholder { color: var(--text-muted); }
+    .chat-list-items { flex: 1; overflow-y: auto; padding: 4px 0; }
+    .chat-list-items::-webkit-scrollbar { width: 4px; }
+    .chat-list-items::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+    .chat-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .chat-item:hover { background: rgba(0, 229, 255, 0.05); }
+    .chat-item.active {
+      background: rgba(0, 229, 255, 0.1);
+      box-shadow: inset 3px 0 0 var(--primary);
+    }
+    .chat-avatar-ring {
+      width: 52px; height: 52px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; position: relative;
+      background: rgba(255,255,255,0.04);
+    }
+    .chat-avatar-ring.unread {
+      background: conic-gradient(from 220deg, var(--primary), var(--accent), var(--gold), var(--primary));
+      padding: 2.5px;
+    }
+    .chat-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: #08080d;
+      flex-shrink: 0;
+      box-shadow: 0 2px 12px var(--primary-glow);
+      transition: var(--transition);
+      border: 2px solid var(--bg-main);
+    }
+    .chat-avatar-ring.unread .chat-avatar { border: 2px solid var(--bg-main); }
+    .chat-item-info { flex: 1; min-width: 0; }
+    .chat-item-name-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .chat-item-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chat-item-time { font-size: 0.65rem; color: var(--text-muted); flex-shrink: 0; }
+    .chat-item.has-unread .chat-item-time { color: var(--primary); font-weight: 700; }
+    .chat-item-bottom-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 2px; }
+    .chat-item-last {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .chat-item.has-unread .chat-item-last { color: var(--text-main); font-weight: 600; }
+    .chat-item-badge {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #08080d;
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      min-width: 18px;
+      text-align: center;
+      box-shadow: 0 0 12px var(--accent-glow);
+      flex-shrink: 0;
+    }
+
+    /* ====== نافذة الدردشة ====== */
+    .chat-window { flex: 1; display: none; flex-direction: column; background: var(--bg-main); position: relative; }
+    .chat-window.active { display: flex; }
+    .chat-window-header {
+      padding: 10px 16px;
+      background: linear-gradient(to bottom, rgba(10,10,15,0.95), rgba(10,10,15,0.75));
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0,229,255,0.12);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .chat-window-header .back-to-list {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      transition: var(--transition);
+    }
+    .chat-window-header .back-to-list:hover { color: var(--primary); }
+    .chat-window-header .back-to-list svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+    .chat-window-header .chat-avatar { width: 38px; height: 38px; font-size: 0.9rem; cursor: pointer; }
+    .chat-window-header .chat-item-name { font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+    .chat-window-header .chat-item-last { font-size: 0.7rem; color: var(--text-muted); }
+
+    /* ====== حاوية الرسائل ====== */
+    .messages-container {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding-bottom: 20px;
+    }
+    .messages-container::-webkit-scrollbar { width: 4px; }
+    .messages-container::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+    .message-wrapper {
+      display: flex;
+      flex-direction: column;
+      max-width: 78%;
+      animation: fadeIn 0.2s ease;
+      position: relative;
+      margin: 3px 0;
+    }
+    .message-wrapper.mine { align-self: flex-start; }
+    .message-wrapper.other { align-self: flex-end; }
+    .message-wrapper.system {
+      align-self: center;
+      max-width: 90%;
+      margin: 10px 0 16px;
+    }
+    .message-wrapper.system .message-bubble {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      padding: 6px 16px;
+      text-align: center;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(0,229,255,0.1);
+    }
+    .message-wrapper.system .message-sender,
+    .message-wrapper.system .message-time,
+    .message-wrapper.system .message-status { display: none; }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(8px) scale(0.97); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .bubble-row { position: relative; display: flex; align-items: center; gap: 6px; }
+    .message-wrapper.other .bubble-row { flex-direction: row-reverse; }
+
+    .message-bubble {
+      padding: 9px 15px;
+      border-radius: var(--radius-bubble);
+      font-size: 0.9rem;
+      line-height: 1.45;
+      word-break: break-word;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+      user-select: none;
+    }
+    .message-wrapper.mine .message-bubble {
+      background: var(--bubble-other);
+      border: 1px solid var(--border-color);
+      color: #e5e7eb;
+    }
+    .message-wrapper.other .message-bubble {
+      background: var(--bubble-mine);
+      color: #08080d;
+      font-weight: 600;
+      box-shadow: 0 2px 15px var(--primary-glow);
+    }
+
+    .msg-heart-badge {
+      position: absolute;
+      bottom: -9px;
+      background: #08080d;
+      border: 1.5px solid var(--bg-main);
+      border-radius: 50%;
+      width: 20px; height: 20px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .message-wrapper.mine .msg-heart-badge { left: 10px; }
+    .message-wrapper.other .msg-heart-badge { right: 10px; }
+    .msg-heart-badge.show { display: flex; }
+    .msg-heart-badge svg { width: 12px; height: 12px; fill: var(--accent); filter: drop-shadow(0 0 4px var(--accent-glow)); }
+
+    .msg-double-heart {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+      z-index: 5; width: 56px; height: 56px; pointer-events: none; opacity: 0;
+    }
+    .msg-double-heart svg { width: 100%; height: 100%; fill: var(--accent); filter: drop-shadow(0 0 14px var(--accent-glow)); }
+    .msg-double-heart.animate { animation: msgHeartBurst 0.7s ease; }
+    @keyframes msgHeartBurst {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      35% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
+    .message-sender {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 2px;
+      padding: 0 4px;
+    }
+    .message-meta-row {
+      display: flex; align-items: center; gap: 4px;
+      margin-top: 3px; padding: 0 4px;
+    }
+    .message-wrapper.other .message-meta-row { align-self: flex-end; flex-direction: row-reverse; }
+    .message-time { font-size: 0.6rem; color: var(--text-muted); }
+    .message-status { display: flex; align-items: center; }
+    .message-status svg { width: 13px; height: 13px; }
+    .message-status.sent svg { stroke: var(--text-muted); fill: none; stroke-width: 2; }
+    .message-status.seen svg { stroke: var(--primary); fill: none; stroke-width: 2; filter: drop-shadow(0 0 4px var(--primary-glow)); }
+
+    /* ====== منطقة الإدخال (بأسلوب انستغرام) ====== */
+    .chat-input-area {
+      padding: 10px 14px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      background: rgba(5, 3, 10, 0.95);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(0,229,255,0.12);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .input-pill-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-pill);
+      padding: 4px 6px 4px 14px;
+      transition: var(--transition);
+    }
+    .input-pill-wrap:focus-within { border-color: var(--primary); box-shadow: var(--glow-soft); }
+    .chat-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+      min-height: 36px;
+      font-family: var(--font-body);
+    }
+    .chat-input::placeholder { color: rgba(255,255,255,0.3); }
+    .input-extra-btn {
+      background: none; border: none; color: var(--text-muted); cursor: pointer;
+      width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      transition: var(--transition); flex-shrink: 0;
+    }
+    .input-extra-btn:hover { color: var(--primary); background: rgba(0,229,255,0.08); }
+    .input-extra-btn svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .btn-send {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #08080d;
+      border: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      flex-shrink: 0;
+      box-shadow: var(--glow-soft);
+    }
+    .btn-send:hover { transform: scale(1.05); box-shadow: 0 6px 25px var(--primary-glow); }
+    .btn-send:active { transform: scale(0.9); }
+    .btn-send svg { width: 19px; height: 19px; fill: currentColor; }
+    .btn-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* ====== حالة فارغة ====== */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; color: var(--text-muted); gap: 10px; text-align: center; padding: 40px 20px;
+    }
+    .empty-state svg { width: 50px; height: 50px; stroke: var(--text-muted); fill: none; stroke-width: 1.5; opacity: 0.35; }
+    .empty-state h3 { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; color: var(--text-muted); }
+    .empty-state p { font-size: 0.82rem; color: var(--text-muted); opacity: 0.6; }
+
+    /* ====== مودال إنشاء مجموعة ====== */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(16px);
+      z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: #120c1e;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      width: 100%;
+      max-width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+      animation: fadeUp 0.3s ease-out;
+    }
+    @keyframes fadeUp {
+      0% { opacity: 0; transform: translateY(20px) scale(0.96); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal-box h2 {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-align: center;
+      background: linear-gradient(to right, #00e5ff, #ff00e5, #ffcc00);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .modal-box input[type="text"] {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+      font-family: var(--font-body);
+    }
+    .modal-box input:focus { border-color: var(--primary); box-shadow: var(--glow-soft); }
+    .friends-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+    .friends-list::-webkit-scrollbar { width: 4px; }
+    .friends-list::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+    .friend-item {
+      display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition); border: 1px solid transparent;
+    }
+    .friend-item:hover { background: rgba(255, 255, 255, 0.06); }
+    .friend-item.selected {
+      background: rgba(0, 229, 255, 0.1); border-color: var(--primary);
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);
+    }
+    .friend-item .chat-avatar { width: 34px; height: 34px; font-size: 0.85rem; }
+    .friend-item span { font-size: 0.9rem; color: #fff; }
+    .friend-item .check { margin-right: auto; color: var(--primary); font-weight: 700; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 2px; }
+    .modal-actions button {
+      flex: 1; padding: 11px; border-radius: var(--radius-sm); border: none; font-weight: 700;
+      cursor: pointer; transition: var(--transition); font-family: var(--font-body); font-size: 0.88rem;
+    }
+    .btn-create { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #08080d; box-shadow: var(--glow-soft); }
+    .btn-create:hover { transform: translateY(-2px); box-shadow: 0 6px 25px var(--primary-glow); }
+    .btn-cancel { background: rgba(255, 255, 255, 0.06); color: var(--text-muted); border: 1px solid var(--border-color); }
+    .btn-cancel:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+    .toast {
+      position: fixed; bottom: calc(var(--nav-height) + 16px); left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #120c1e; border: 1px solid var(--border-color); color: var(--text-main);
+      padding: 10px 18px; border-radius: var(--radius-pill); font-size: 0.8rem; font-weight: 600;
+      z-index: 900; opacity: 0; pointer-events: none; transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      max-width: 90%; text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ====== الشريط السفلي (للجوال، مطابق للصفحات الأخرى) ====== */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--nav-height);
+      max-width: 460px; margin: 0 auto;
+      background: rgba(10, 10, 15, 0.95);
+      backdrop-filter: blur(18px);
+      border-top: 1px solid var(--border-color);
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+    }
+    .bottom-nav .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      color: var(--text-muted); text-decoration: none; font-size: 0.6rem; font-weight: 600;
+      transition: var(--transition); padding: 4px 12px; font-family: var(--font-body);
+    }
+    .bottom-nav .nav-item svg { width: 24px; height: 24px; fill: currentColor; transition: var(--transition); }
+    .bottom-nav .nav-item.active, .bottom-nav .nav-item:hover { color: var(--primary); text-shadow: 0 0 10px var(--primary-glow); }
+    .bottom-nav .nav-item.active svg { filter: drop-shadow(0 0 10px var(--primary-glow)); }
+
+    /* ====== استجابة للشاشات ====== */
+    @media (max-width: 768px) {
+      .chat-list { max-width: 100%; width: 100%; border-left: none; }
+      .chat-window { position: absolute; inset: 0; z-index: 20; background: var(--bg-main); padding-bottom: var(--nav-height); }
+      .chat-window.active { display: flex; }
+      .chat-window-header .back-to-list { display: flex; }
+      .chat-list.hidden { display: none; }
+      .bottom-nav { display: flex; }
+      body { padding-bottom: 0; }
+    }
+
+    @media (min-width: 769px) {
+      .chat-list { display: flex !important; }
+      .chat-window { display: flex !important; position: relative; z-index: auto; }
+      .chat-window-header .back-to-list { display: none; }
+      .bottom-nav { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      .chat-header h1 { font-size: 0.78rem; }
+      .chat-item { padding: 8px 12px; }
+      .chat-avatar { width: 42px; height: 42px; font-size: 0.9rem; }
+      .chat-avatar-ring { width: 46px; height: 46px; }
+      .chat-item-name { font-size: 0.85rem; }
+      .chat-item-last { font-size: 0.72rem; }
+      .message-wrapper { max-width: 88%; }
+      .message-bubble { font-size: 0.85rem; padding: 8px 13px; }
+      .modal-box { padding: 18px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="chat-header">
+    <h1>ZEPHYR DIRECT</h1>
+    <div class="chat-header-actions">
+      <button class="icon-btn" id="createGroupBtn" onclick="openCreateGroupModal()" title="إنشاء مجموعة جديدة">
+        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      </button>
+      <button class="icon-btn" onclick="showToast('🔍 قريباً: البحث المتقدم')">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="chat-main">
+
+    <div class="chat-list" id="chatList">
+      <div class="chat-list-header">
+        <input type="text" id="searchInput" placeholder="🔍 بحث في الرسائل...">
+      </div>
+      <div class="chat-list-items" id="chatListItems"></div>
+    </div>
+
+    <div class="chat-window" id="chatWindow">
+      <div class="chat-window-header">
+        <button class="back-to-list" onclick="closeChatWindow()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="chat-avatar" id="windowAvatar" onclick="goToWindowProfile()">Z</div>
+        <div style="flex:1;" onclick="goToWindowProfile()">
+          <div class="chat-item-name" id="windowName">المجموعة</div>
+          <div class="chat-item-last" id="windowMembers">أعضاء</div>
+        </div>
+        <button class="icon-btn" onclick="showToast('⚙️ إعدادات المحادثة قريباً')">
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </button>
+      </div>
+
+      <div class="messages-container" id="messagesContainer"></div>
+
+      <div class="chat-input-area">
+        <button class="input-extra-btn" onclick="showToast('📎 قريباً: إرفاق ملفات')">
+          <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+        </button>
+        <div class="input-pill-wrap">
+          <input type="text" id="messageInput" class="chat-input" placeholder="اكتب رسالة..." onkeypress="handleKeyPress(event)" autocomplete="off">
+          <button class="input-extra-btn" onclick="showToast('😊 قريباً: الرموز التعبيرية')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+          </button>
+        </div>
+        <button class="btn-send" id="sendBtn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- الشريط السفلي (للجوال) -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>الرئيسية</span>
+    </a>
+    <a href="reels.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+      <span>Reels</span>
+    </a>
+    <a href="chat.html" class="nav-item active">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+      <span>الدردشة</span>
+    </a>
+    <a href="profile.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span>الملف</span>
+    </a>
+  </nav>
+
+  <!-- مودال إنشاء مجموعة -->
+  <div class="modal-overlay" id="createGroupModal">
+    <div class="modal-box">
+      <h2>👥 إنشاء مجموعة جديدة</h2>
+      <input type="text" id="groupNameInput" placeholder="اسم المجموعة (اختياري)">
+      <p style="font-size:0.8rem;color:var(--text-muted);">اختر الأصدقاء الذين تريد إضافتهم (اضغط لتحديد):</p>
+      <div class="friends-list" id="friendsList"></div>
+      <div class="modal-actions">
+        <button class="btn-create" onclick="createGroup()">🚀 إنشاء المجموعة</button>
+        <button class="btn-cancel" onclick="closeCreateGroupModal()">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ============================================================
+    //  دوال الأمان - تعقيم النصوص
+    // ============================================================
+    function sanitize(str) {
+      if (typeof str !== 'string') return '';
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '/': '&#x2F;',
+        '`': '&#x60;',
+        '=': '&#x3D;'
+      };
+      return str.replace(/[&<>"'/`=]/g, (m) => map[m]);
+    }
+    function escapeHtml(str) { return sanitize(str); }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = sanitize(msg);
+      t.classList.add('show');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    // ============================================================
+    //  المتغيرات العامة
+    // ============================================================
+    let currentUser = null;
+    let currentChatId = null;
+    let chatsUnsubscribe = null;
+    let messagesUnsubscribe = null;
+    let userFriends = [];
+    let selectedFriends = [];
+    let allChats = {};
+    let isSending = false;
+    let pendingChatId = null;
+    let lastClickedMsg = { id: null, time: 0 };
+
+    // ============================================================
+    //  انتظار المصادقة
+    // ============================================================
+    function waitForAuth() {
+      return new Promise((resolve) => {
+        const { auth, onAuthStateChanged } = window.ZephyrChat;
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          unsubscribe();
+          resolve(user);
+        });
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const checkInterval = setInterval(() => {
+        if (window.ZephyrChat) {
+          clearInterval(checkInterval);
+          initApp();
+        }
+      }, 100);
+    });
+
+    async function initApp() {
+      const user = await waitForAuth();
+      if (!user) {
+        window.location.replace('login.html');
+        return;
+      }
+      currentUser = user;
+
+      await loadFriends();
+      listenToChats();
+
+      document.getElementById('searchInput').addEventListener('input', filterChats);
+
+      renderChatList();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      pendingChatId = urlParams.get('chatId');
+      if (pendingChatId) {
+        setTimeout(() => {
+          if (allChats[pendingChatId] && !document.getElementById('chatWindow').classList.contains('active')) {
+            openChat(pendingChatId);
+            pendingChatId = null;
+          }
+        }, 1000);
+      }
+    }
+
+    // ============================================================
+    //  جلب الأصدقاء
+    // ============================================================
+    async function loadFriends() {
+      try {
+        const { db, doc, getDoc } = window.ZephyrChat;
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (!userDoc.exists()) return;
+        const userData = userDoc.data();
+        const following = userData.following || [];
+
+        const friends = [];
+        for (const uid of following) {
+          const otherDoc = await getDoc(doc(db, "users", uid));
+          if (otherDoc.exists()) {
+            const otherData = otherDoc.data();
+            const otherFollowing = otherData.following || [];
+            if (otherFollowing.includes(currentUser.uid)) {
+              friends.push({
+                uid: uid,
+                displayName: otherData.displayName || 'مستخدم',
+                avatar: otherData.displayName ? otherData.displayName.charAt(0).toUpperCase() : '?'
+              });
+            }
+          }
+        }
+        userFriends = friends;
+      } catch (err) {
+        console.error("خطأ في جلب الأصدقاء:", err);
+      }
+    }
+
+    // ============================================================
+    //  الاستماع للمحادثات
+    // ============================================================
+    function listenToChats() {
+      const { db, collection, query, where, onSnapshot } = window.ZephyrChat;
+
+      if (chatsUnsubscribe) {
+        chatsUnsubscribe();
+        chatsUnsubscribe = null;
+      }
+
+      const chatsRef = collection(db, "chats");
+      const q = query(chatsRef, where("participants", "array-contains", currentUser.uid));
+
+      chatsUnsubscribe = onSnapshot(q, async (snapshot) => {
+        const chats = {};
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          chats[doc.id] = { id: doc.id, ...data };
+        });
+        allChats = chats;
+
+        renderChatList();
+
+        if (currentChatId && chats[currentChatId]) {
+          updateChatWindowHeader(currentChatId);
+          updateSeenStatus(currentChatId);
+        } else if (currentChatId && !chats[currentChatId]) {
+          closeChatWindow();
+        }
+
+        if (pendingChatId && chats[pendingChatId] && !document.getElementById('chatWindow').classList.contains('active')) {
+          openChat(pendingChatId);
+          pendingChatId = null;
+        }
+      }, (error) => {
+        console.error("خطأ في استماع المحادثات:", error);
+      });
+    }
+
+    // ============================================================
+    //  عرض القائمة (بأسلوب انستغرام: حلقة متدرجة حول الأفاتار عند وجود رسائل غير مقروءة)
+    // ============================================================
+    function renderChatList(filter = '') {
+      const container = document.getElementById('chatListItems');
+      const chatIds = Object.keys(allChats).filter(id => {
+        const chat = allChats[id];
+        const name = chat.isGroup ? chat.groupName : getChatOtherName(chat);
+        return name.toLowerCase().includes(filter.toLowerCase());
+      }).sort((a, b) => {
+        const ta = allChats[a].lastMessageTime?.seconds || new Date(allChats[a].lastMessageTime || 0).getTime() / 1000 || 0;
+        const tb = allChats[b].lastMessageTime?.seconds || new Date(allChats[b].lastMessageTime || 0).getTime() / 1000 || 0;
+        return tb - ta;
+      });
+
+      if (chatIds.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17l-.59.59L4 17.17V4h16v12zM6 12h12v2H6zm0-3h12v2H6zm0-3h12v2H6z"/></svg>
+            <h3>لا توجد محادثات</h3>
+            <p>ابدأ محادثة مع أصدقائك أو أنشئ مجموعة جديدة.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      chatIds.forEach(id => {
+        const chat = allChats[id];
+        const isGroup = chat.isGroup || false;
+        const name = isGroup ? chat.groupName : getChatOtherName(chat);
+        const avatar = isGroup ? '👥' : (getChatOtherAvatar(chat) || '👤');
+        const lastMsg = chat.lastMessage || 'لا توجد رسائل';
+        const lastTime = chat.lastMessageTime ? formatTime(chat.lastMessageTime) : '';
+        const unread = chat.unreadCount?.[currentUser.uid] || 0;
+
+        html += `
+          <div class="chat-item ${id === currentChatId ? 'active' : ''} ${unread > 0 ? 'has-unread' : ''}" data-chat-id="${id}" onclick="openChat('${id}')">
+            <div class="chat-avatar-ring ${unread > 0 ? 'unread' : ''}">
+              <div class="chat-avatar">${avatar}</div>
+            </div>
+            <div class="chat-item-info">
+              <div class="chat-item-name-row">
+                <div class="chat-item-name">${escapeHtml(name)}</div>
+                ${lastTime ? `<div class="chat-item-time">${escapeHtml(lastTime)}</div>` : ''}
+              </div>
+              <div class="chat-item-bottom-row">
+                <div class="chat-item-last">${escapeHtml(lastMsg)}</div>
+                ${unread > 0 ? `<div class="chat-item-badge">${unread}</div>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function formatTime(ts) {
+      const date = ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
+      const now = new Date();
+      const isToday = date.toDateString() === now.toDateString();
+      if (isToday) return date.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleDateString('ar', { day: 'numeric', month: 'short' });
+    }
+
+    function filterChats(e) {
+      const filter = e.target.value.trim();
+      renderChatList(filter);
+    }
+
+    // ============================================================
+    //  دوال مساعدة
+    // ============================================================
+    function getChatOtherName(chat) {
+      if (chat.isGroup) return chat.groupName || 'المجموعة';
+      const otherId = chat.participants.find(id => id !== currentUser.uid);
+      const friend = userFriends.find(f => f.uid === otherId);
+      return friend ? friend.displayName : 'مستخدم';
+    }
+
+    function getChatOtherAvatar(chat) {
+      if (chat.isGroup) return '👥';
+      const otherId = chat.participants.find(id => id !== currentUser.uid);
+      const friend = userFriends.find(f => f.uid === otherId);
+      return friend ? friend.displayName.charAt(0).toUpperCase() : '👤';
+    }
+
+    function getChatOtherId(chat) {
+      if (chat.isGroup) return null;
+      return chat.participants.find(id => id !== currentUser.uid);
+    }
+
+    function goToWindowProfile() {
+      if (!currentChatId) return;
+      const chat = allChats[currentChatId];
+      if (!chat || chat.isGroup) return;
+      const otherId = getChatOtherId(chat);
+      if (otherId) window.location.href = `profile.html?uid=${otherId}`;
+    }
+
+    // ============================================================
+    //  فتح وإغلاق المحادثة
+    // ============================================================
+    function openChat(chatId) {
+      currentChatId = chatId;
+      const chat = allChats[chatId];
+      if (!chat) return;
+
+      document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.chat-item[data-chat-id="${chatId}"]`)?.classList.add('active');
+
+      const windowEl = document.getElementById('chatWindow');
+      windowEl.classList.add('active');
+      if (window.innerWidth <= 768) {
+        document.getElementById('chatList').classList.add('hidden');
+      }
+
+      updateChatWindowHeader(chatId);
+      loadMessages(chatId);
+      markChatAsRead(chatId);
+    }
+
+    function updateChatWindowHeader(chatId) {
+      const chat = allChats[chatId];
+      if (!chat) return;
+      const isGroup = chat.isGroup || false;
+      const name = isGroup ? chat.groupName : getChatOtherName(chat);
+      const avatar = isGroup ? '👥' : (getChatOtherAvatar(chat) || '👤');
+      document.getElementById('windowName').textContent = escapeHtml(name);
+      document.getElementById('windowAvatar').textContent = avatar;
+      document.getElementById('windowMembers').textContent = isGroup ? `${chat.participants.length} أعضاء` : 'دردشة خاصة';
+    }
+
+    function closeChatWindow() {
+      currentChatId = null;
+      document.getElementById('chatWindow').classList.remove('active');
+      document.getElementById('chatList').classList.remove('hidden');
+      if (messagesUnsubscribe) {
+        messagesUnsubscribe();
+        messagesUnsubscribe = null;
+      }
+    }
+
+    // ============================================================
+    //  تحميل الرسائل (مع تفاعلات الإعجاب المزدوجة بأسلوب انستغرام)
+    // ============================================================
+    function loadMessages(chatId) {
+      const { db, collection, query, orderBy, onSnapshot } = window.ZephyrChat;
+
+      if (messagesUnsubscribe) {
+        messagesUnsubscribe();
+        messagesUnsubscribe = null;
+      }
+
+      const messagesRef = collection(db, "chats", chatId, "messages");
+      const q = query(messagesRef, orderBy("createdAt", "asc"));
+
+      messagesUnsubscribe = onSnapshot(q, (snapshot) => {
+        const container = document.getElementById('messagesContainer');
+        if (snapshot.empty) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17l-.59.59L4 17.17V4h16v12zM6 12h12v2H6zm0-3h12v2H6zm0-3h12v2H6z"/></svg>
+              <h3>لا توجد رسائل</h3>
+              <p>ابدأ المحادثة الآن! 💬</p>
+            </div>
+          `;
+          return;
+        }
+
+        let systemHTML = '';
+        let othersHTML = '';
+        let lastMineId = null;
+
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const msgId = doc.id;
+          const isSystem = data.userId === 'system';
+          const isMine = data.userId === currentUser.uid;
+          const author = escapeHtml(data.author || 'مجهول');
+          const text = escapeHtml(data.text || '');
+          const time = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) : 'الآن';
+          const likedBy = data.likedBy || [];
+          const isLikedByMe = likedBy.includes(currentUser.uid);
+          const hasLikes = likedBy.length > 0;
+
+          if (isMine) lastMineId = msgId;
+
+          let wrapper = 'message-wrapper';
+          if (isSystem) wrapper += ' system';
+          else if (isMine) wrapper += ' mine';
+          else wrapper += ' other';
+
+          const msgHTML = `
+            <div class="${wrapper}" data-msg-id="${msgId}">
+              ${!isMine && !isSystem ? `<div class="message-sender">@${author}</div>` : ''}
+              <div class="bubble-row">
+                <div class="message-bubble" ondblclick="handleMessageDoubleClick('${msgId}', event)" onclick="handleMessageClick('${msgId}')">
+                  ${text}
+                  <div class="msg-double-heart" id="dh-${msgId}">
+                    <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                  </div>
+                  <div class="msg-heart-badge ${hasLikes ? 'show' : ''}" id="hb-${msgId}">
+                    <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                  </div>
+                </div>
+              </div>
+              ${!isSystem ? `
+                <div class="message-meta-row">
+                  <span class="message-time">${escapeHtml(time)}</span>
+                  ${isMine ? `<span class="message-status sent" id="status-${msgId}"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>` : ''}
+                </div>
+              ` : ''}
+            </div>
+          `;
+
+          if (isSystem) systemHTML = msgHTML;
+          else othersHTML += msgHTML;
+        });
+
+        container.innerHTML = systemHTML + othersHTML;
+        container.scrollTop = container.scrollHeight;
+
+        window._lastMineMsgId = lastMineId;
+        updateSeenStatus(chatId);
+      });
+    }
+
+    // ====== حالة "شوهدت" لآخر رسالة أرسلتُها (دردشات فردية فقط) ======
+    function updateSeenStatus(chatId) {
+      const chat = allChats[chatId];
+      if (!chat || chat.isGroup || !window._lastMineMsgId) return;
+      const statusEl = document.getElementById(`status-${window._lastMineMsgId}`);
+      if (!statusEl) return;
+
+      const otherId = getChatOtherId(chat);
+      if (!otherId) return;
+      const otherUnread = chat.unreadCount?.[otherId] || 0;
+
+      if (otherUnread === 0) {
+        statusEl.className = 'message-status seen';
+        statusEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 6 7 17 2 12"></polyline><polyline points="22 6 11 17 9 15"></polyline></svg>';
+      } else {
+        statusEl.className = 'message-status sent';
+        statusEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      }
+    }
+
+    // ============================================================
+    //  تفاعل الإعجاب بالرسالة (ضغطة مزدوجة بأسلوب انستغرام)
+    // ============================================================
+    function handleMessageClick(msgId) {
+      const now = Date.now();
+      if (lastClickedMsg.id === msgId && (now - lastClickedMsg.time) < 300) {
+        handleMessageDoubleClick(msgId);
+      }
+      lastClickedMsg = { id: msgId, time: now };
+    }
+
+    async function handleMessageDoubleClick(msgId) {
+      const heartAnim = document.getElementById(`dh-${msgId}`);
+      if (heartAnim) {
+        heartAnim.classList.remove('animate');
+        void heartAnim.offsetWidth;
+        heartAnim.classList.add('animate');
+      }
+      await toggleMessageLike(msgId, true);
+    }
+
+    async function toggleMessageLike(msgId, forceLike = false) {
+      if (!currentChatId || !currentUser) return;
+      const badge = document.getElementById(`hb-${msgId}`);
+      try {
+        const { db, doc, updateDoc, arrayUnion, getDoc } = window.ZephyrChat;
+        const msgRef = doc(db, "chats", currentChatId, "messages", msgId);
+        const msgSnap = await getDoc(msgRef);
+        if (!msgSnap.exists()) return;
+        const likedBy = msgSnap.data().likedBy || [];
+        const alreadyLiked = likedBy.includes(currentUser.uid);
+
+        if (forceLike && alreadyLiked) {
+          if (badge) badge.classList.add('show');
+          return;
+        }
+
+        const { arrayRemove } = window.ZephyrChat;
+        if (alreadyLiked) {
+          await updateDoc(msgRef, { likedBy: arrayRemove(currentUser.uid) });
+          if (badge) badge.classList.remove('show');
+        } else {
+          await updateDoc(msgRef, { likedBy: arrayUnion(currentUser.uid) });
+          if (badge) badge.classList.add('show');
+        }
+      } catch (err) {
+        console.error("خطأ في تفاعل الرسالة:", err);
+      }
+    }
+
+    // ============================================================
+    //  تحديث عدد الرسائل غير المقروءة
+    // ============================================================
+    async function markChatAsRead(chatId) {
+      try {
+        const { db, doc, updateDoc } = window.ZephyrChat;
+        const chatRef = doc(db, "chats", chatId);
+        await updateDoc(chatRef, {
+          [`unreadCount.${currentUser.uid}`]: 0
+        });
+      } catch (err) {
+        console.error("خطأ في تحديث القراءة:", err);
+      }
+    }
+
+    // ============================================================
+    //  إرسال رسالة
+    // ============================================================
+    async function sendMessage() {
+      if (isSending || !currentChatId) return;
+
+      const input = document.getElementById('messageInput');
+      let text = input.value.trim();
+      if (!text) return;
+
+      text = escapeHtml(text);
+      if (text.length === 0) return;
+
+      isSending = true;
+      const sendBtn = document.getElementById('sendBtn');
+      sendBtn.disabled = true;
+
+      try {
+        const { db, collection, addDoc, serverTimestamp, doc, updateDoc } = window.ZephyrChat;
+
+        const messagesRef = collection(db, "chats", currentChatId, "messages");
+        await addDoc(messagesRef, {
+          text: text,
+          userId: currentUser.uid,
+          author: currentUser.displayName || currentUser.email?.split('@')[0] || 'Gamer',
+          likedBy: [],
+          createdAt: serverTimestamp()
+        });
+
+        const chatRef = doc(db, "chats", currentChatId);
+        const chat = allChats[currentChatId];
+        const participants = chat.participants || [];
+        const unreadCount = {};
+        participants.forEach(uid => {
+          if (uid !== currentUser.uid) {
+            unreadCount[uid] = (chat.unreadCount?.[uid] || 0) + 1;
+          }
+        });
+        await updateDoc(chatRef, {
+          lastMessage: text,
+          lastMessageTime: serverTimestamp(),
+          unreadCount: unreadCount
+        });
+
+        input.value = '';
+        input.focus();
+      } catch (err) {
+        console.error("خطأ في إرسال الرسالة:", err);
+        showToast('حدث خطأ أثناء إرسال الرسالة. حاول مرة أخرى.');
+      } finally {
+        isSending = false;
+        sendBtn.disabled = false;
+      }
+    }
+
+    // ============================================================
+    //  إرسال بالضغط على Enter
+    // ============================================================
+    function handleKeyPress(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    // ============================================================
+    //  إنشاء مجموعة جديدة
+    // ============================================================
+    function openCreateGroupModal() {
+      document.getElementById('createGroupModal').classList.add('active');
+      selectedFriends = [];
+      renderFriendsList();
+    }
+
+    function closeCreateGroupModal() {
+      document.getElementById('createGroupModal').classList.remove('active');
+      selectedFriends = [];
+    }
+
+    function renderFriendsList() {
+      const container = document.getElementById('friendsList');
+      if (userFriends.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:12px;">ليس لديك أصدقاء بعد. اتبع بعض اللاعبين!</p>';
+        return;
+      }
+      let html = '';
+      userFriends.forEach(friend => {
+        const selected = selectedFriends.includes(friend.uid);
+        html += `
+          <div class="friend-item ${selected ? 'selected' : ''}" onclick="toggleFriend('${friend.uid}')">
+            <div class="chat-avatar">${escapeHtml(friend.displayName.charAt(0).toUpperCase())}</div>
+            <span>${escapeHtml(friend.displayName)}</span>
+            ${selected ? '<span class="check">✓</span>' : ''}
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function toggleFriend(uid) {
+      const index = selectedFriends.indexOf(uid);
+      if (index > -1) selectedFriends.splice(index, 1);
+      else selectedFriends.push(uid);
+      renderFriendsList();
+    }
+
+    async function createGroup() {
+      if (selectedFriends.length < 1) {
+        showToast('يرجى اختيار صديق واحد على الأقل.');
+        return;
+      }
+
+      const groupName = document.getElementById('groupNameInput').value.trim() || 'مجموعة جديدة';
+
+      try {
+        const { db, collection, addDoc } = window.ZephyrChat;
+
+        const participants = [currentUser.uid, ...selectedFriends];
+
+        const chatRef = await addDoc(collection(db, "chats"), {
+          isGroup: true,
+          groupName: escapeHtml(groupName),
+          participants: participants,
+          createdBy: currentUser.uid,
+          createdAt: new Date().toISOString(),
+          lastMessage: 'تم إنشاء المجموعة',
+          lastMessageTime: new Date().toISOString(),
+          unreadCount: {}
+        });
+
+        const messagesRef = collection(db, "chats", chatRef.id, "messages");
+        await addDoc(messagesRef, {
+          text: 'تم إنشاء المجموعة! 🎉',
+          userId: 'system',
+          author: 'ZEPHYR',
+          likedBy: [],
+          createdAt: new Date(0)
+        });
+
+        closeCreateGroupModal();
+        showToast('✅ تم إنشاء المجموعة بنجاح!');
+      } catch (err) {
+        console.error("خطأ في إنشاء المجموعة:", err);
+        showToast('حدث خطأ أثناء إنشاء المجموعة.');
+      }
+    }
+
+    // ============================================================
+    //  تصدير الدوال
+    // ============================================================
+    window.openChat = openChat;
+    window.sendMessage = sendMessage;
+    window.handleKeyPress = handleKeyPress;
+    window.openCreateGroupModal = openCreateGroupModal;
+    window.closeCreateGroupModal = closeCreateGroupModal;
+    window.toggleFriend = toggleFriend;
+    window.createGroup = createGroup;
+    window.closeChatWindow = closeChatWindow;
+    window.filterChats = filterChats;
+    window.handleMessageClick = handleMessageClick;
+    window.handleMessageDoubleClick = handleMessageDoubleClick;
+    window.goToWindowProfile = goToWindowProfile;
+    window.showToast = showToast;
+
+    console.log('✅ ZEPHYR Direct - تصميم Gamer بأسلوب Instagram DMs جاهز');
+  </script>
+</body>
+</html>

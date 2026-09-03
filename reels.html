@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0f">
+  <title>ZEPHYR - Reels</title>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, query, orderBy, where, doc, updateDoc, getDoc, setDoc, arrayUnion, arrayRemove, addDoc, onSnapshot, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-stk7sia-kJ_PzVMuSI5gmyqR5yTtR_A",
+      authDomain: "zephyr-8df18.firebaseapp.com",
+      projectId: "zephyr-8df18",
+      storageBucket: "zephyr-8df18.firebasestorage.app",
+      messagingSenderId: "836989543748",
+      appId: "1:836989543748:web:fc07d9e4a79172482ce311"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.ZephyrReels = { auth, db, onAuthStateChanged, collection, query, orderBy, where, doc, updateDoc, getDoc, setDoc, arrayUnion, arrayRemove, addDoc, onSnapshot, increment, deleteDoc };
+  </script>
+
+  <style>
+    /* ====== نفس هوية ZEPHYR (Gamer / Neon) الموجودة في الصفحة الرئيسية ====== */
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+    :root {
+      --bg-main: #0a0a0f;
+      --bg-card: rgba(10, 10, 20, 0.88);
+      --bg-input: rgba(0, 0, 0, 0.8);
+      --primary: #00e5ff;
+      --primary-hover: #00b8d4;
+      --primary-glow: rgba(0, 229, 255, 0.55);
+      --accent: #ff00e5;
+      --accent-glow: rgba(255, 0, 229, 0.45);
+      --gold: #ffcc00;
+      --text-main: #f0f8ff;
+      --text-muted: #a0b0c0;
+      --border-color: rgba(0, 229, 255, 0.32);
+      --danger: #ef4444;
+      --success: #10b981;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 22px;
+      --radius-pill: 999px;
+      --nav-height: 64px;
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --font-display: 'Orbitron', sans-serif;
+      --font-body: 'Rajdhani', sans-serif;
+      --glow-soft: 0 0 18px var(--primary-glow);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ====== حاوية الريلز ====== */
+    .reels-container {
+      flex: 1; min-height: 0; width: 100%; max-width: 460px; margin: 0 auto;
+      overflow-y: scroll; scroll-snap-type: y mandatory; scrollbar-width: none; position: relative;
+      background: #000;
+    }
+    .reels-container::-webkit-scrollbar { display: none; }
+
+    .reels-loading, .reels-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; gap: 10px; color: var(--text-muted); font-family: var(--font-body); text-align: center; padding: 20px;
+    }
+    .reels-loading .spinner {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 3px solid rgba(0,229,255,0.15); border-top-color: var(--primary);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ====== بطاقة الريل ====== */
+    .reel-card {
+      height: 100%; width: 100%; scroll-snap-align: start; scroll-snap-stop: always; position: relative;
+      background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .reel-video {
+      width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; background: #000;
+    }
+
+    /* ====== شريط التقدم علوي على طراز تيك توك ====== */
+    .progress-container-top {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 15; height: 3px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .progress-bar-top {
+      height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent));
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    /* ====== منطقة النقر ====== */
+    .reel-click-area { position: absolute; inset: 0; z-index: 5; cursor: pointer; }
+
+    /* ====== أيقونة التشغيل/الإيقاف ====== */
+    .play-pause-icon {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.6);
+      z-index: 12; width: 68px; height: 68px; background: rgba(0,0,0,0.55); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none;
+      transition: transform 0.25s ease, opacity 0.25s ease; backdrop-filter: blur(6px);
+      border: 1px solid var(--border-color); box-shadow: var(--glow-soft);
+    }
+    .play-pause-icon.active { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .play-pause-icon svg { width: 34px; height: 34px; fill: var(--primary); }
+
+    /* ====== قلب الضغطة المزدوجة ====== */
+    .double-tap-heart {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+      z-index: 13; width: 100px; height: 100px; pointer-events: none; opacity: 0;
+    }
+    .double-tap-heart svg { width: 100%; height: 100%; fill: var(--accent); filter: drop-shadow(0 0 20px var(--accent-glow)); }
+    .double-tap-heart.animate { animation: heartBurst 0.75s ease; }
+    @keyframes heartBurst {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      30% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+      45% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
+      80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
+    /* ====== زر كتم الصوت (أعلى يمين، طراز تيك توك) ====== */
+    .mute-btn {
+      position: absolute; top: 14px; left: 14px; z-index: 20;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(10,10,15,0.55); border: 1px solid var(--border-color);
+      backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: var(--transition);
+    }
+    .mute-btn:hover { border-color: var(--primary); box-shadow: var(--glow-soft); }
+    .mute-btn svg { width: 18px; height: 18px; fill: var(--text-main); }
+
+    /* ====== شارة أعلى الشاشة ====== */
+    .reels-top-bar {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 460px; display: flex; justify-content: center; align-items: center;
+      padding: 12px 0; z-index: 60; pointer-events: none;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent);
+    }
+    .reels-top-bar span {
+      font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; letter-spacing: 2px;
+      background: linear-gradient(to right, #00e5ff, #ff00e5, #ffcc00, #00e5ff);
+      background-size: 300% 100%;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      animation: gradientShift 5s ease-in-out infinite alternate;
+      text-shadow: 0 0 20px rgba(0,229,255,0.25);
+    }
+    @keyframes gradientShift { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+
+    /* ====== تراكب المعلومات ====== */
+    .reel-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 60px 14px 18px;
+      background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.35) 55%, transparent 100%);
+      display: flex; justify-content: space-between; align-items: flex-end; z-index: 10;
+      pointer-events: none;
+    }
+    .reel-overlay > * { pointer-events: auto; }
+
+    .reel-info { display: flex; flex-direction: column; gap: 8px; max-width: 68%; }
+    .author-name-row { display: flex; align-items: center; gap: 6px; }
+    .author-name {
+      font-size: 0.95rem; font-weight: 700; color: var(--text-main);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.9); cursor: pointer;
+      transition: var(--transition);
+    }
+    .author-name:hover { color: var(--primary); text-shadow: 0 0 16px var(--primary-glow); }
+    .author-badge {
+      font-size: 0.55rem; background: rgba(0,229,255,0.15); color: var(--primary);
+      padding: 2px 7px; border-radius: 20px; border: 1px solid rgba(0,229,255,0.3); flex-shrink: 0;
+    }
+    .reel-caption {
+      font-size: 0.85rem; color: rgba(240,248,255,0.92);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.9); line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* ====== أزرار التفاعل الجانبية ====== */
+    .reel-actions {
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+    .avatar-follow-container {
+      position: relative; margin-bottom: 2px; display: flex; flex-direction: column; align-items: center;
+    }
+    .reel-avatar {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.1rem; color: #08080d;
+      border: 2px solid var(--bg-main); cursor: pointer;
+      box-shadow: 0 0 14px var(--primary-glow);
+      transition: var(--transition);
+    }
+    .reel-avatar:hover { transform: scale(1.08); box-shadow: 0 0 22px var(--primary-glow); }
+    .follow-btn-only {
+      position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+      width: 22px; height: 22px; background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #08080d; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900;
+      border: 2px solid var(--bg-main); cursor: pointer; transition: var(--transition);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .follow-btn-only:hover { transform: translateX(-50%) scale(1.15); }
+
+    .action-btn {
+      background: none; border: none; color: var(--text-main); cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      font-size: 0.68rem; font-weight: 700; transition: var(--transition);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+      padding: 4px;
+    }
+    .action-btn svg {
+      width: 29px; height: 29px; fill: none; stroke: currentColor; stroke-width: 1.8;
+      filter: drop-shadow(0 2px 10px rgba(0,0,0,0.6));
+      transition: var(--transition);
+    }
+    .action-btn:active svg { transform: scale(0.85); }
+    .action-btn:hover { transform: scale(1.05); }
+    .action-btn.liked { color: var(--accent); }
+    .action-btn.liked svg { fill: var(--accent); stroke: none; filter: drop-shadow(0 0 8px var(--accent-glow)); }
+    .action-btn.saved { color: var(--primary); }
+    .action-btn.saved svg { fill: var(--primary); stroke: none; filter: drop-shadow(0 0 8px var(--primary-glow)); }
+    .action-btn.reposted { color: var(--gold); }
+    .action-btn.reposted svg { fill: var(--gold); stroke: none; filter: drop-shadow(0 0 8px rgba(255,204,0,0.5)); }
+
+    .delete-btn {
+      background: none; border: none; color: rgba(240,248,255,0.45); cursor: pointer;
+      font-size: 0.68rem; padding: 4px 10px; border-radius: 12px;
+      transition: var(--transition); display: flex; align-items: center; gap: 4px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+    }
+    .delete-btn:hover { color: var(--danger); background: rgba(239,68,68,0.15); }
+    .delete-btn svg { width: 15px; height: 15px; fill: currentColor; }
+
+    /* ====== زر إضافة مقطع ====== */
+    .btn-add-reel {
+      position: fixed; top: 12px; left: 50%; transform: translateX(calc(-50% + 150px));
+      z-index: 100;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #08080d; border: none; padding: 8px 16px; border-radius: var(--radius-pill);
+      font-family: var(--font-body);
+      font-size: 0.78rem; font-weight: 700; box-shadow: var(--glow-soft);
+      cursor: pointer; transition: var(--transition);
+      display: flex; align-items: center; gap: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-add-reel:hover { transform: translateX(calc(-50% + 150px)) translateY(-2px); box-shadow: 0 6px 26px var(--primary-glow); }
+    .btn-add-reel:active { transform: translateX(calc(-50% + 150px)) scale(0.92); }
+    .btn-add-reel svg { width: 16px; height: 16px; fill: currentColor; }
+
+    /* ====== الشريط السفلي (مطابق للصفحة الرئيسية) ====== */
+    .bottom-nav {
+      height: var(--nav-height); width: 100%; max-width: 460px; margin: 0 auto;
+      background: rgba(10, 10, 15, 0.95); backdrop-filter: blur(18px);
+      border-top: 1px solid var(--border-color);
+      display: flex; justify-content: space-around; align-items: center;
+      flex-shrink: 0; z-index: 100;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      color: var(--text-muted); text-decoration: none; font-size: 0.6rem; font-weight: 600;
+      transition: var(--transition); padding: 4px 12px;
+      font-family: var(--font-body);
+    }
+    .nav-item svg { width: 24px; height: 24px; fill: currentColor; transition: var(--transition); }
+    .nav-item.active, .nav-item:hover { color: var(--primary); text-shadow: 0 0 10px var(--primary-glow); }
+    .nav-item.active svg { filter: drop-shadow(0 0 10px var(--primary-glow)); }
+
+    /* ====== مودال التعليقات ====== */
+    .comments-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(14px);
+      z-index: 250; display: none; justify-content: flex-end; flex-direction: column;
+    }
+    .comments-modal.show { display: flex; }
+    .comments-box {
+      background: #120c1e; border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);
+      height: 60vh; max-height: 80vh; display: flex; flex-direction: column;
+      padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+      max-width: 460px; margin: 0 auto; width: 100%;
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.9); border-top: 1px solid var(--border-color);
+    }
+    .comments-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-weight: 700; flex-shrink: 0; font-family: var(--font-body);
+      color: var(--text-main);
+    }
+    .comments-header span:last-child {
+      cursor: pointer; color: var(--text-muted); font-size: 1.2rem;
+      transition: var(--transition); padding: 4px 8px; border-radius: 8px;
+    }
+    .comments-header span:last-child:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .comments-list {
+      flex: 1; overflow-y: auto; padding: 12px 0; display: flex; flex-direction: column; gap: 10px;
+    }
+    .comments-list::-webkit-scrollbar { width: 4px; }
+    .comments-list::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+    .comment-item {
+      display: flex; gap: 10px; font-size: 0.9rem; padding: 4px 0;
+      align-items: flex-start;
+    }
+    .comment-user { font-weight: 700; color: var(--primary); flex-shrink: 0; }
+    .comment-text { color: #e5e7eb; word-break: break-word; }
+    .comments-input-area {
+      display: flex; gap: 8px; padding-top: 10px; flex-shrink: 0; align-items: center;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .comments-input-area input {
+      flex: 1; background: var(--bg-input); border: 1px solid var(--border-color);
+      border-radius: 50px; padding: 10px 16px; color: #fff; outline: none; font-size: 0.9rem;
+      transition: var(--transition);
+      font-family: var(--font-body);
+    }
+    .comments-input-area input:focus {
+      border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow);
+    }
+    .comments-input-area button {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border: none; color: #08080d; padding: 10px 20px; border-radius: 50px;
+      font-weight: 700; cursor: pointer; flex-shrink: 0; white-space: nowrap;
+      transition: var(--transition); font-family: var(--font-body);
+      box-shadow: var(--glow-soft);
+    }
+    .comments-input-area button:hover { transform: translateY(-2px); box-shadow: 0 6px 25px var(--primary-glow); }
+
+    /* ====== مودال رفع المقطع ====== */
+    .upload-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
+      z-index: 200; display: none; justify-content: center; align-items: center; padding: 20px;
+    }
+    .upload-modal.show { display: flex; }
+    .upload-box {
+      background: #120c1e; border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 400px;
+      display: flex; flex-direction: column; gap: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+    }
+    .upload-box h3 {
+      text-align: center; font-family: var(--font-display); font-size: 1.15rem;
+      background: linear-gradient(to right, #00e5ff, #ff00e5, #ffcc00);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin: 0;
+    }
+    .video-preview {
+      width: 100%; aspect-ratio: 9/16; max-height: 220px; background: #000;
+      border-radius: var(--radius-sm); overflow: hidden; display: none;
+      border: 1px solid var(--border-color);
+    }
+    .video-preview.show { display: block; }
+    .video-preview video { width: 100%; height: 100%; object-fit: contain; }
+    .upload-box input[type="file"] {
+      background: rgba(255,255,255,0.04); border: 1px dashed var(--border-color);
+      color: var(--text-main); padding: 10px; border-radius: var(--radius-sm); font-family: var(--font-body);
+      cursor: pointer; transition: var(--transition);
+    }
+    .upload-box input[type="file"]:hover { border-color: var(--primary); }
+    .upload-box textarea {
+      background: var(--bg-input); border: 1px solid var(--border-color);
+      color: var(--text-main); padding: 10px; border-radius: var(--radius-sm); font-family: var(--font-body);
+      resize: none; outline: none; transition: var(--transition);
+    }
+    .upload-box textarea:focus { border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
+    .upload-progress-bar {
+      width: 100%; height: 8px; border-radius: 20px; overflow: hidden; background: rgba(255,255,255,0.08); display: none;
+    }
+    .upload-progress-bar.show { display: block; }
+    .upload-progress-fill { height: 100%; width: 0%; border-radius: 20px; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.2s ease; }
+    #uploadStatus {
+      text-align: center; font-size: 0.85rem; font-weight: 600;
+      color: var(--primary); min-height: 22px;
+    }
+    .btn-group { display: flex; gap: 10px; }
+    .btn-group button, .btn-close-modal {
+      flex: 1; padding: 12px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; border: none;
+      font-family: var(--font-body); transition: var(--transition);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #08080d; box-shadow: var(--glow-soft);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 25px var(--primary-glow); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      background: rgba(255,255,255,0.06); color: var(--text-muted);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+    .toast {
+      position: fixed; bottom: calc(var(--nav-height) + 16px); left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #120c1e; border: 1px solid var(--border-color); color: var(--text-main);
+      padding: 10px 18px; border-radius: var(--radius-pill); font-size: 0.8rem; font-weight: 600;
+      z-index: 900; opacity: 0; pointer-events: none; transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      max-width: 90%; text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ====== استجابة ====== */
+    @media (min-width: 600px) {
+      .reels-container, .bottom-nav, .comments-box, .reels-top-bar { max-width: 420px; }
+      .btn-add-reel { transform: translateX(calc(-50% + 130px)); }
+      .btn-add-reel:hover { transform: translateX(calc(-50% + 130px)) translateY(-2px); }
+      .btn-add-reel:active { transform: translateX(calc(-50% + 130px)) scale(0.92); }
+    }
+    @media (max-width: 480px) {
+      .btn-add-reel { padding: 6px 12px; font-size: 0.7rem; transform: translateX(calc(-50% + 118px)); }
+      .btn-add-reel:hover, .btn-add-reel:active { transform: translateX(calc(-50% + 118px)); }
+      .reel-actions { gap: 12px; }
+      .action-btn svg { width: 25px; height: 25px; }
+      .reel-avatar { width: 40px; height: 40px; font-size: 0.9rem; }
+      .follow-btn-only { width: 18px; height: 18px; font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="reels-top-bar"><span>ZEPHYR REELS</span></div>
+  <button class="btn-add-reel" onclick="openUploadModal()">
+    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    إضافة
+  </button>
+
+  <div class="reels-container" id="reelsContainer">
+    <div class="reels-loading">
+      <div class="spinner"></div>
+      <span>جاري تحميل الريلز...</span>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>الرئيسية</span>
+    </a>
+    <a href="reels.html" class="nav-item active">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+      <span>Reels</span>
+    </a>
+    <a href="chat.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+      <span>الدردشة</span>
+    </a>
+    <a href="profile.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span>الملف</span>
+    </a>
+  </nav>
+
+  <div class="comments-modal" id="commentsModal" onclick="closeCommentsModal(event)">
+    <div class="comments-box" onclick="event.stopPropagation()">
+      <div class="comments-header">
+        <span>💬 التعليقات</span>
+        <span onclick="closeCommentsModal()">✕</span>
+      </div>
+      <div class="comments-list" id="commentsList"></div>
+      <div class="comments-input-area">
+        <input type="text" id="commentInput" placeholder="أضف تعليقاً..." onkeydown="if(event.key==='Enter'){sendComment();}">
+        <button id="sendCommentBtn" onclick="sendComment()">إرسال</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="upload-modal" id="uploadModal">
+    <div class="upload-box">
+      <h3>🎬 نشر Reel جديد</h3>
+      <div class="video-preview" id="videoPreview">
+        <video id="previewVideo" controls playsinline></video>
+      </div>
+      <input type="file" id="videoFileInput" accept="video/mp4,video/webm" onchange="previewVideoFile(this)">
+      <textarea id="reelCaptionInput" rows="2" placeholder="وصف المقطع..."></textarea>
+      <div class="upload-progress-bar" id="uploadProgressBar"><div class="upload-progress-fill" id="uploadProgressFill"></div></div>
+      <div id="uploadStatus"></div>
+      <div class="btn-group">
+        <button id="btnSubmitUpload" class="btn-primary" onclick="uploadReel()">🚀 نشر</button>
+      </div>
+      <button class="btn-close-modal btn-secondary" onclick="closeUploadModal()">إلغاء</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ====== الإعدادات ======
+    const CLOUD_NAME = "k6juyzsw";
+    const UPLOAD_PRESET = "zephyr_preset";
+
+    // ====== دالة التعقيم ======
+    function sanitize(str) {
+      if (typeof str !== 'string') return '';
+      return str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;' })[m]);
+    }
+
+    // ====== المتغيرات العامة ======
+    let currentUser = null;
+    let reelsCache = {};
+    let reelsOrder = [];
+    let userLikedReels = [];
+    let userSavedReels = [];
+    let userFollowing = [];
+    let userRepostedReels = [];
+    let isProcessingLike = false;
+    let isProcessingSave = false;
+    let isProcessingFollow = false;
+    let isProcessingRepost = false;
+    let activeReelForComments = null;
+    let commentsUnsubscribe = null;
+    let unsubscribeUser = null;
+    let unsubscribeReels = null;
+    let observer = null;
+    let isGloballyMuted = false; // طراز تيك توك: الصوت مفعّل افتراضياً، وتُحفظ رغبة المستخدم أثناء الجلسة
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = sanitize(msg);
+      t.classList.add('show');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    // ====== انتظار المصادقة ======
+    function waitForAuth() {
+      return new Promise((resolve) => {
+        const { auth, onAuthStateChanged } = window.ZephyrReels;
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          unsubscribe();
+          resolve(user);
+        });
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const checkInterval = setInterval(() => {
+        if (window.ZephyrReels) {
+          clearInterval(checkInterval);
+          initApp();
+        }
+      }, 100);
+    });
+
+    async function initApp() {
+      const user = await waitForAuth();
+      if (!user) {
+        window.location.replace('login.html');
+        return;
+      }
+      currentUser = user;
+      listenToUserData();
+      listenToReels();
+      await fetchUserDataOnce();
+    }
+
+    // ====== ضمان وجود مستند المستخدم ======
+    async function ensureUserDocument(uid) {
+      if (!uid) return;
+      const { db, doc, getDoc, setDoc } = window.ZephyrReels;
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          displayName: 'مستخدم ZEPHYR',
+          email: '',
+          bio: 'لاعب في ZEPHYR 🎮',
+          followers: [],
+          following: [],
+          followersCount: 0,
+          followingCount: 0,
+          savedReels: [],
+          likedReels: [],
+          repostedReels: [],
+          totalLikes: 0,
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+
+    // ====== الاستماع المباشر لوثيقة المستخدم ======
+    function listenToUserData() {
+      const { db, doc, onSnapshot } = window.ZephyrReels;
+      if (unsubscribeUser) unsubscribeUser();
+
+      const userRef = doc(db, "users", currentUser.uid);
+      unsubscribeUser = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          userLikedReels = data.likedReels || [];
+          userSavedReels = data.savedReels || [];
+          userFollowing = data.following || [];
+          userRepostedReels = data.repostedReels || [];
+          updateAllReelsUI();
+        } else {
+          ensureUserDocument(currentUser.uid);
+        }
+      }, (error) => {
+        console.error("خطأ في استماع المستخدم:", error);
+      });
+    }
+
+    // ====== الاستماع المباشر لمجموعة الريلز ======
+    function listenToReels() {
+      const { db, collection, query, orderBy, onSnapshot } = window.ZephyrReels;
+      if (unsubscribeReels) unsubscribeReels();
+
+      const q = query(collection(db, "reels"), orderBy("createdAt", "desc"));
+
+      unsubscribeReels = onSnapshot(q, (snapshot) => {
+        const container = document.getElementById('reelsContainer');
+        if (snapshot.empty) {
+          container.innerHTML = `<div class="reels-empty">🎬<br>لا توجد مقاطع حالياً<br><span style="font-size:0.75rem;">كن أول من ينشر Reel!</span></div>`;
+          reelsCache = {};
+          reelsOrder = [];
+          return;
+        }
+
+        const newCache = {};
+        const newOrder = [];
+        snapshot.forEach((doc) => {
+          newCache[doc.id] = { id: doc.id, ...doc.data() };
+          newOrder.push(doc.id);
+        });
+
+        if (Object.keys(reelsCache).length === 0) {
+          reelsCache = newCache;
+          reelsOrder = newOrder;
+          renderReels();
+          setupIntersectionObserver();
+          setupClickHandlers();
+          return;
+        }
+
+        const oldIds = new Set(Object.keys(reelsCache));
+        const newIds = new Set(Object.keys(newCache));
+
+        oldIds.forEach(id => {
+          if (!newIds.has(id)) {
+            const card = document.querySelector(`.reel-card[data-id="${id}"]`);
+            if (card) card.remove();
+            delete reelsCache[id];
+          }
+        });
+
+        newIds.forEach(id => {
+          const newData = newCache[id];
+          const oldData = reelsCache[id];
+          if (!oldData) {
+            reelsCache[id] = newData;
+            appendReelCard(newData);
+          } else if (JSON.stringify(oldData) !== JSON.stringify(newData)) {
+            reelsCache[id] = newData;
+            updateReelCardUI(id, newData);
+          }
+        });
+
+        reelsOrder = newOrder;
+        setupIntersectionObserver();
+        setupClickHandlers();
+
+      }, (error) => {
+        console.error("❌ خطأ في استماع الريلز:", error);
+        const container = document.getElementById('reelsContainer');
+        container.innerHTML = `<div class="reels-empty">تعذر تحميل المقاطع<br><span style="font-size:0.75rem;">${sanitize(error.message)}</span></div>`;
+      });
+    }
+
+    async function fetchUserDataOnce() {
+      try {
+        const { db, doc, getDoc } = window.ZephyrReels;
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (!userDoc.exists()) {
+          await ensureUserDocument(currentUser.uid);
+        }
+      } catch (e) {
+        console.error("خطأ جلب بيانات المستخدم:", e);
+      }
+    }
+
+    function updateAllReelsUI() {
+      document.querySelectorAll('.reel-card').forEach(card => {
+        const id = card.dataset.id;
+        if (!id) return;
+        updateReelCardUI(id, reelsCache[id] || {});
+      });
+    }
+
+    // ====== بناء HTML لبطاقة واحدة ======
+    function buildReelCardHTML(data) {
+      const id = data.id;
+      const author = sanitize(data.author || 'مجهول');
+      const authorId = data.userId || '';
+      const caption = sanitize(data.caption || '');
+      const videoUrl = data.videoUrl;
+      const likesCount = data.likedBy ? data.likedBy.length : (data.likes || 0);
+      const repostCount = data.repostCount || 0;
+      const isLiked = userLikedReels.includes(id);
+      const isSaved = userSavedReels.includes(id);
+      const isReposted = userRepostedReels.includes(id);
+      const isFollowing = userFollowing.includes(authorId);
+      const isSelf = authorId === currentUser.uid;
+      const initial = author.charAt(0).toUpperCase();
+
+      return `
+        <div class="reel-card" data-id="${id}" data-author-id="${authorId}">
+          <video class="reel-video" src="${videoUrl}" loop playsinline muted preload="metadata" ontimeupdate="updateProgressBar('${id}', this)"></video>
+          <div class="progress-container-top">
+            <div class="progress-bar-top" id="progress-${id}"></div>
+          </div>
+          <button class="mute-btn" id="muteBtn-${id}" onclick="event.stopPropagation(); toggleMute('${id}');">
+            <svg id="muteIcon-${id}" viewBox="0 0 24 24"><path d="M3 10v4h4l5 5V5L7 10H3z"/></svg>
+          </button>
+          <div class="play-pause-icon" id="playIcon-${id}">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+          <div class="double-tap-heart" id="doubleHeart-${id}">
+            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          </div>
+          <div class="reel-click-area" data-id="${id}"></div>
+
+          <div class="reel-overlay">
+            <div class="reel-info">
+              <div class="author-name-row">
+                <span class="author-name" onclick="goToProfile('${authorId}')">@${author}</span>
+                <span class="author-badge">Gamer</span>
+              </div>
+              <div class="reel-caption">${caption}</div>
+              ${isSelf ? `
+                <button class="delete-btn" onclick="deleteReel('${id}')">
+                  <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                  حذف
+                </button>
+              ` : ''}
+            </div>
+            <div class="reel-actions">
+              <div class="avatar-follow-container">
+                <div class="reel-avatar" onclick="goToProfile('${authorId}')">${initial}</div>
+                ${(!isSelf && !isFollowing) ? `
+                  <button class="follow-btn-only" onclick="followUser('${authorId}')">+</button>
+                ` : ''}
+              </div>
+              <button class="action-btn ${isLiked ? 'liked' : ''}" id="likeBtn-${id}" onclick="toggleLike('${id}', '${authorId}')">
+                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <span id="likesCount-${id}">${likesCount}</span>
+              </button>
+              <button class="action-btn" onclick="openCommentsModal('${id}')">
+                <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                <span>تعليق</span>
+              </button>
+              <button class="action-btn ${isSaved ? 'saved' : ''}" id="saveBtn-${id}" onclick="toggleSaveReel('${id}')">
+                <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                <span id="saveTxt-${id}">${isSaved ? 'محفوظ' : 'حفظ'}</span>
+              </button>
+              <button class="action-btn ${isReposted ? 'reposted' : ''}" id="repostBtn-${id}" onclick="toggleRepost('${id}')">
+                <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                <span id="repostCount-${id}">${repostCount}</span>
+              </button>
+              <button class="action-btn" onclick="shareReel('${videoUrl}')">
+                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                <span>مشاركة</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderReels() {
+      const container = document.getElementById('reelsContainer');
+      const ids = reelsOrder.length ? reelsOrder : Object.keys(reelsCache);
+      if (ids.length === 0) {
+        container.innerHTML = `<div class="reels-empty">🎬<br>لا توجد مقاطع حالياً</div>`;
+        return;
+      }
+      let html = '';
+      ids.forEach(id => {
+        if (reelsCache[id]) html += buildReelCardHTML(reelsCache[id]);
+      });
+      container.innerHTML = html;
+      applyMuteStateToAll();
+    }
+
+    function appendReelCard(data) {
+      const container = document.getElementById('reelsContainer');
+      const cardHTML = buildReelCardHTML(data);
+      container.insertAdjacentHTML('beforeend', cardHTML);
+      applyMuteStateToAll();
+    }
+
+    function updateReelCardUI(id, data) {
+      const card = document.querySelector(`.reel-card[data-id="${id}"]`);
+      if (!card) return;
+
+      const likesCount = data.likedBy ? data.likedBy.length : (data.likes || 0);
+      const repostCount = data.repostCount || 0;
+      const likesSpan = document.getElementById(`likesCount-${id}`);
+      const repostSpan = document.getElementById(`repostCount-${id}`);
+      if (likesSpan) likesSpan.textContent = likesCount;
+      if (repostSpan) repostSpan.textContent = repostCount;
+
+      const isLiked = userLikedReels.includes(id);
+      const isSaved = userSavedReels.includes(id);
+      const isReposted = userRepostedReels.includes(id);
+      const likeBtn = document.getElementById(`likeBtn-${id}`);
+      const saveBtn = document.getElementById(`saveBtn-${id}`);
+      const saveTxt = document.getElementById(`saveTxt-${id}`);
+      const repostBtn = document.getElementById(`repostBtn-${id}`);
+
+      if (likeBtn) likeBtn.classList.toggle('liked', isLiked);
+      if (saveBtn) {
+        saveBtn.classList.toggle('saved', isSaved);
+        if (saveTxt) saveTxt.textContent = isSaved ? 'محفوظ' : 'حفظ';
+      }
+      if (repostBtn) repostBtn.classList.toggle('reposted', isReposted);
+
+      const authorId = data.userId;
+      const isFollowing = userFollowing.includes(authorId);
+      const followBtn = card.querySelector('.follow-btn-only');
+      if (followBtn) {
+        followBtn.style.display = (isFollowing || authorId === currentUser.uid) ? 'none' : 'flex';
+      }
+
+      const deleteBtn = card.querySelector('.delete-btn');
+      if (deleteBtn) {
+        deleteBtn.style.display = (authorId === currentUser.uid) ? 'flex' : 'none';
+      }
+    }
+
+    // ====== ربط أحداث النقر ======
+    function setupClickHandlers() {
+      document.querySelectorAll('.reel-click-area').forEach(area => {
+        const id = area.dataset.id;
+        if (!id) return;
+        area.removeEventListener('click', area._clickHandler);
+        area.removeEventListener('dblclick', area._dblclickHandler);
+
+        area._clickHandler = function(e) {
+          if (e.detail === 1) {
+            togglePlayVideo(id);
+          }
+        };
+        area._dblclickHandler = function(e) {
+          e.preventDefault();
+          handleDoubleTapLike(id);
+        };
+
+        area.addEventListener('click', area._clickHandler);
+        area.addEventListener('dblclick', area._dblclickHandler);
+      });
+    }
+
+    // ====== دوال التشغيل والإيقاف ======
+    function togglePlayVideo(id) {
+      const card = document.querySelector(`.reel-card[data-id="${id}"]`);
+      if (!card) return;
+      const video = card.querySelector('.reel-video');
+      const icon = document.getElementById(`playIcon-${id}`);
+      if (video.paused) {
+        video.play();
+        showPlayPauseIcon(icon, false);
+      } else {
+        video.pause();
+        showPlayPauseIcon(icon, true);
+      }
+    }
+
+    function showPlayPauseIcon(icon, isPaused) {
+      if (!icon) return;
+      icon.classList.add('active');
+      setTimeout(() => icon.classList.remove('active'), 500);
+    }
+
+    function handleDoubleTapLike(id) {
+      const heart = document.getElementById(`doubleHeart-${id}`);
+      if (heart) {
+        heart.classList.remove('animate');
+        void heart.offsetWidth;
+        heart.classList.add('animate');
+      }
+      const card = document.querySelector(`.reel-card[data-id="${id}"]`);
+      const authorId = card ? card.getAttribute('data-author-id') : null;
+      const likeBtn = document.getElementById(`likeBtn-${id}`);
+      if (likeBtn && !likeBtn.classList.contains('liked')) {
+        toggleLike(id, authorId);
+      }
+    }
+
+    // ====== كتم/تشغيل الصوت (طراز تيك توك: يطبَّق على كل المقاطع) ======
+    function toggleMute(id) {
+      isGloballyMuted = !isGloballyMuted;
+      applyMuteStateToAll();
+    }
+
+    function applyMuteStateToAll() {
+      document.querySelectorAll('.reel-video').forEach(v => { v.muted = isGloballyMuted; });
+      document.querySelectorAll('[id^="muteIcon-"]').forEach(icon => {
+        icon.innerHTML = isGloballyMuted
+          ? '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>'
+          : '<path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+      });
+    }
+
+    // ====== دالة الإعجاب ======
+    async function toggleLike(id, authorId) {
+      if (isProcessingLike) return;
+      if (!currentUser) return;
+      isProcessingLike = true;
+
+      const likeBtn = document.getElementById(`likeBtn-${id}`);
+      const likesCountSpan = document.getElementById(`likesCount-${id}`);
+      if (!likeBtn || !likesCountSpan) { isProcessingLike = false; return; }
+
+      const isLiked = likeBtn.classList.contains('liked');
+      let currentLikes = parseInt(likesCountSpan.textContent, 10) || 0;
+
+      if (isLiked) {
+        likeBtn.classList.remove('liked');
+        currentLikes = Math.max(0, currentLikes - 1);
+        userLikedReels = userLikedReels.filter(item => item !== id);
+      } else {
+        likeBtn.classList.add('liked');
+        currentLikes += 1;
+        userLikedReels.push(id);
+      }
+      likesCountSpan.textContent = currentLikes;
+
+      try {
+        const { db, doc, updateDoc, arrayUnion, arrayRemove, increment } = window.ZephyrReels;
+        const reelRef = doc(db, "reels", id);
+        const userRef = doc(db, "users", currentUser.uid);
+
+        if (authorId && authorId !== currentUser.uid) {
+          await ensureUserDocument(authorId);
+        }
+
+        const operations = [];
+        if (isLiked) {
+          operations.push(updateDoc(reelRef, { likedBy: arrayRemove(currentUser.uid) }));
+          operations.push(updateDoc(userRef, { likedReels: arrayRemove(id) }));
+          if (authorId && authorId !== currentUser.uid) {
+            operations.push(updateDoc(doc(db, "users", authorId), { totalLikes: increment(-1) }));
+          }
+        } else {
+          operations.push(updateDoc(reelRef, { likedBy: arrayUnion(currentUser.uid) }));
+          operations.push(updateDoc(userRef, { likedReels: arrayUnion(id) }));
+          if (authorId && authorId !== currentUser.uid) {
+            operations.push(updateDoc(doc(db, "users", authorId), { totalLikes: increment(1) }));
+          }
+        }
+        await Promise.all(operations);
+      } catch (err) {
+        console.error("خطأ الإعجاب:", err);
+        if (isLiked) {
+          likeBtn.classList.add('liked');
+          likesCountSpan.textContent = currentLikes + 1;
+          userLikedReels.push(id);
+        } else {
+          likeBtn.classList.remove('liked');
+          likesCountSpan.textContent = Math.max(0, currentLikes - 1);
+          userLikedReels = userLikedReels.filter(item => item !== id);
+        }
+        showToast('تعذر تحديث الإعجاب');
+      } finally {
+        isProcessingLike = false;
+      }
+    }
+
+    // ====== دالة المتابعة ======
+    async function followUser(targetUserId) {
+      if (isProcessingFollow) return;
+      if (!currentUser || !targetUserId || targetUserId === currentUser.uid) return;
+      isProcessingFollow = true;
+
+      const btns = document.querySelectorAll(`.follow-btn-only[onclick*="followUser('${targetUserId}')"]`);
+      btns.forEach(btn => btn.style.display = 'none');
+
+      if (!userFollowing.includes(targetUserId)) {
+        userFollowing.push(targetUserId);
+      }
+
+      try {
+        const { db, doc, updateDoc, arrayUnion, increment } = window.ZephyrReels;
+        const myRef = doc(db, "users", currentUser.uid);
+        const targetRef = doc(db, "users", targetUserId);
+
+        await ensureUserDocument(targetUserId);
+
+        await Promise.all([
+          updateDoc(myRef, { following: arrayUnion(targetUserId), followingCount: increment(1) }),
+          updateDoc(targetRef, { followers: arrayUnion(currentUser.uid), followersCount: increment(1) })
+        ]);
+
+        updateFollowButtonsForAuthor(targetUserId);
+        showToast('تمت المتابعة ✅');
+      } catch (err) {
+        console.error("خطأ المتابعة:", err);
+        btns.forEach(btn => btn.style.display = 'flex');
+        userFollowing = userFollowing.filter(id => id !== targetUserId);
+        showToast('تعذرت المتابعة');
+      } finally {
+        isProcessingFollow = false;
+      }
+    }
+
+    function updateFollowButtonsForAuthor(authorId) {
+      document.querySelectorAll(`.reel-card[data-author-id="${authorId}"]`).forEach(card => {
+        const followBtn = card.querySelector('.follow-btn-only');
+        if (followBtn) followBtn.style.display = 'none';
+      });
+    }
+
+    // ====== دالة حفظ الفيديو ======
+    async function toggleSaveReel(reelId) {
+      if (isProcessingSave) return;
+      if (!currentUser) return;
+      isProcessingSave = true;
+
+      const saveBtn = document.getElementById(`saveBtn-${reelId}`);
+      const saveTxt = document.getElementById(`saveTxt-${reelId}`);
+      if (!saveBtn || !saveTxt) { isProcessingSave = false; return; }
+
+      const isSaved = saveBtn.classList.contains('saved');
+
+      if (isSaved) {
+        saveBtn.classList.remove('saved');
+        saveTxt.textContent = 'حفظ';
+        userSavedReels = userSavedReels.filter(id => id !== reelId);
+      } else {
+        saveBtn.classList.add('saved');
+        saveTxt.textContent = 'محفوظ';
+        userSavedReels.push(reelId);
+      }
+
+      try {
+        const { db, doc, updateDoc, arrayUnion, arrayRemove } = window.ZephyrReels;
+        const userRef = doc(db, "users", currentUser.uid);
+        if (isSaved) {
+          await updateDoc(userRef, { savedReels: arrayRemove(reelId) });
+        } else {
+          await updateDoc(userRef, { savedReels: arrayUnion(reelId) });
+          showToast('تم الحفظ 📌');
+        }
+      } catch (err) {
+        console.error("خطأ حفظ الفيديو:", err);
+        if (isSaved) {
+          saveBtn.classList.add('saved');
+          saveTxt.textContent = 'محفوظ';
+          userSavedReels.push(reelId);
+        } else {
+          saveBtn.classList.remove('saved');
+          saveTxt.textContent = 'حفظ';
+          userSavedReels = userSavedReels.filter(id => id !== reelId);
+        }
+        showToast('تعذر تحديث الحفظ');
+      } finally {
+        isProcessingSave = false;
+      }
+    }
+
+    // ====== دالة إعادة النشر ======
+    async function toggleRepost(reelId) {
+      if (isProcessingRepost) return;
+      if (!currentUser) return;
+      isProcessingRepost = true;
+
+      const repostBtn = document.getElementById(`repostBtn-${reelId}`);
+      const repostSpan = document.getElementById(`repostCount-${reelId}`);
+      if (!repostBtn || !repostSpan) { isProcessingRepost = false; return; }
+
+      const isReposted = repostBtn.classList.contains('reposted');
+      let currentCount = parseInt(repostSpan.textContent, 10) || 0;
+
+      if (isReposted) {
+        repostBtn.classList.remove('reposted');
+        currentCount = Math.max(0, currentCount - 1);
+        userRepostedReels = userRepostedReels.filter(id => id !== reelId);
+      } else {
+        repostBtn.classList.add('reposted');
+        currentCount += 1;
+        userRepostedReels.push(reelId);
+      }
+      repostSpan.textContent = currentCount;
+
+      if (reelsCache[reelId]) {
+        reelsCache[reelId].repostCount = currentCount;
+      }
+
+      try {
+        const { db, doc, updateDoc, arrayUnion, arrayRemove, increment } = window.ZephyrReels;
+        const reelRef = doc(db, "reels", reelId);
+        const userRef = doc(db, "users", currentUser.uid);
+
+        await Promise.all([
+          updateDoc(reelRef, { repostCount: increment(isReposted ? -1 : 1) }),
+          updateDoc(userRef, { repostedReels: isReposted ? arrayRemove(reelId) : arrayUnion(reelId) })
+        ]);
+      } catch (err) {
+        console.error("خطأ إعادة النشر:", err);
+        if (isReposted) {
+          repostBtn.classList.add('reposted');
+          repostSpan.textContent = currentCount + 1;
+          userRepostedReels.push(reelId);
+          if (reelsCache[reelId]) reelsCache[reelId].repostCount = currentCount + 1;
+        } else {
+          repostBtn.classList.remove('reposted');
+          repostSpan.textContent = Math.max(0, currentCount - 1);
+          userRepostedReels = userRepostedReels.filter(id => id !== reelId);
+          if (reelsCache[reelId]) reelsCache[reelId].repostCount = Math.max(0, currentCount - 1);
+        }
+        showToast('تعذرت إعادة النشر');
+      } finally {
+        isProcessingRepost = false;
+      }
+    }
+
+    // ====== دوال التعليقات ======
+    function openCommentsModal(reelId) {
+      activeReelForComments = reelId;
+      document.getElementById('commentsModal').classList.add('show');
+      document.getElementById('commentInput').value = '';
+      loadComments(reelId);
+    }
+
+    function closeCommentsModal(e) {
+      if (!e || e.target.id === 'commentsModal' || e.type === 'click') {
+        document.getElementById('commentsModal').classList.remove('show');
+        if (commentsUnsubscribe) commentsUnsubscribe();
+      }
+    }
+
+    function loadComments(reelId) {
+      const { db, collection, query, orderBy, onSnapshot } = window.ZephyrReels;
+      const list = document.getElementById('commentsList');
+      list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-body);">جاري التحميل...</div>';
+
+      const commentsRef = collection(db, "reels", reelId, "comments");
+      const q = query(commentsRef, orderBy("createdAt", "asc"));
+
+      if (commentsUnsubscribe) commentsUnsubscribe();
+
+      commentsUnsubscribe = onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+          list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-body);">لا توجد تعليقات بعد. كُن الأول! 💬</div>';
+          return;
+        }
+        let html = '';
+        snapshot.forEach((doc) => {
+          const c = doc.data();
+          html += `
+            <div class="comment-item">
+              <span class="comment-user">@${sanitize(c.author)}</span>
+              <span class="comment-text">${sanitize(c.text)}</span>
+            </div>
+          `;
+        });
+        list.innerHTML = html;
+        list.scrollTop = list.scrollHeight;
+      });
+    }
+
+    async function sendComment() {
+      const input = document.getElementById('commentInput');
+      const text = input.value.trim();
+      if (!text || !activeReelForComments || !currentUser) return;
+
+      input.value = '';
+      try {
+        const { db, collection, addDoc } = window.ZephyrReels;
+        const authorName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Gamer';
+        await addDoc(collection(db, "reels", activeReelForComments, "comments"), {
+          author: authorName,
+          text: text,
+          createdAt: new Date().toISOString()
+        });
+      } catch (e) {
+        console.error("خطأ إرسال التعليق:", e);
+        showToast('فشل إرسال التعليق');
+      }
+    }
+
+    // ====== دوال أخرى ======
+    function goToProfile(userId) {
+      if (!userId) return;
+      window.location.href = `profile.html?uid=${userId}`;
+    }
+
+    async function deleteReel(reelId) {
+      if (!currentUser) return;
+      if (!confirm('هل أنت متأكد من حذف هذا المنشور؟')) return;
+
+      try {
+        const { db, doc, getDoc, deleteDoc } = window.ZephyrReels;
+        const reelRef = doc(db, "reels", reelId);
+        const reelSnap = await getDoc(reelRef);
+        if (!reelSnap.exists()) {
+          showToast('الفيديو غير موجود');
+          return;
+        }
+        if (reelSnap.data().userId !== currentUser.uid) {
+          showToast('لا يمكنك حذف فيديو ليس لك');
+          return;
+        }
+        await deleteDoc(reelRef);
+        showToast('تم حذف المنشور');
+      } catch (err) {
+        console.error("خطأ حذف المنشور:", err);
+        showToast('حدث خطأ أثناء حذف المنشور');
+      }
+    }
+
+    function updateProgressBar(id, video) {
+      const progressBar = document.getElementById(`progress-${id}`);
+      if (progressBar && video.duration) {
+        const percent = (video.currentTime / video.duration) * 100;
+        progressBar.style.width = percent + '%';
+      }
+    }
+
+    function setupIntersectionObserver() {
+      if (observer) observer.disconnect();
+      const videos = document.querySelectorAll('.reel-video');
+      observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const video = entry.target;
+          if (entry.isIntersecting) {
+            video.currentTime = 0;
+            video.muted = isGloballyMuted;
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        });
+      }, { threshold: 0.6 });
+      videos.forEach(v => observer.observe(v));
+    }
+
+    function shareReel(videoUrl) {
+      if (navigator.share) {
+        navigator.share({ title: 'ZEPHYR Reel', url: videoUrl }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(videoUrl).then(() => showToast('✅ تم نسخ رابط الفيديو!'));
+      }
+    }
+
+    function openUploadModal() { document.getElementById('uploadModal').classList.add('show'); }
+    function closeUploadModal() { document.getElementById('uploadModal').classList.remove('show'); }
+    function previewVideoFile(input) {
+      const preview = document.getElementById('videoPreview');
+      const video = document.getElementById('previewVideo');
+      if (input.files && input.files[0]) {
+        video.src = URL.createObjectURL(input.files[0]);
+        preview.classList.add('show');
+      }
+    }
+
+    async function uploadReel() {
+      const fileInput = document.getElementById('videoFileInput');
+      const caption = document.getElementById('reelCaptionInput').value.trim();
+      const status = document.getElementById('uploadStatus');
+      const progressBar = document.getElementById('uploadProgressBar');
+      const progressFill = document.getElementById('uploadProgressFill');
+      const submitBtn = document.getElementById('btnSubmitUpload');
+
+      if (!fileInput.files[0]) { status.textContent = 'يرجى اختيار مقطع فيديو.'; status.style.color = '#fca5a5'; return; }
+      submitBtn.disabled = true;
+      status.textContent = '⏳ جاري الرفع...';
+      status.style.color = 'var(--primary)';
+      progressBar.classList.add('show');
+      progressFill.style.width = '20%';
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('upload_preset', UPLOAD_PRESET);
+
+      try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        progressFill.style.width = '70%';
+        const data = await res.json();
+        if (!data.secure_url) throw new Error(data.error?.message || 'فشل رفع الفيديو');
+
+        const { db, collection, addDoc } = window.ZephyrReels;
+        const authorName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Gamer';
+
+        progressFill.style.width = '90%';
+        await addDoc(collection(db, "reels"), {
+          author: authorName,
+          userId: currentUser.uid,
+          videoUrl: data.secure_url,
+          caption: caption,
+          likedBy: [],
+          likes: 0,
+          repostCount: 0,
+          createdAt: new Date().toISOString()
+        });
+
+        progressFill.style.width = '100%';
+        status.textContent = '🎉 تم النشر بنجاح!';
+        status.style.color = '#6ee7b7';
+        setTimeout(() => {
+          closeUploadModal();
+          fileInput.value = '';
+          document.getElementById('reelCaptionInput').value = '';
+          document.getElementById('videoPreview').classList.remove('show');
+          progressBar.classList.remove('show');
+          progressFill.style.width = '0%';
+          status.textContent = '';
+          submitBtn.disabled = false;
+        }, 1200);
+      } catch (e) {
+        status.textContent = '❌ فشل الرفع: ' + (e.message || 'خطأ غير معروف');
+        status.style.color = '#fca5a5';
+        console.error(e);
+        submitBtn.disabled = false;
+        progressBar.classList.remove('show');
+      }
+    }
+  </script>
+</body>
+</html>
