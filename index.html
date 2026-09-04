@@ -10,7 +10,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, limit, startAfter, getDoc, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, limit, startAfter, getDoc, where, deleteDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC-stk7sia-kJ_PzVMuSI5gmyqR5yTtR_A",
@@ -29,12 +29,13 @@
             auth, db, onAuthStateChanged, signOut,
             collection, addDoc, getDocs, query, orderBy, serverTimestamp,
             doc, updateDoc, arrayUnion, arrayRemove, onSnapshot,
-            limit, startAfter, getDoc, where, deleteDoc
+            limit, startAfter, getDoc, where, deleteDoc, increment
         };
     </script>
 
     <style>
-        /* ====== ZEPHYR — نفس هوية شاشة الدخول (Gamer / Neon) ====== */
+        /* ... نفس الأنماط السابقة ... */
+        /* تم إزالة الأنماط للاختصار، لكن سيتم تضمينها كاملة في الملف النهائي */
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
 
         :root {
@@ -309,7 +310,7 @@
         .comments-input-area button { background: linear-gradient(135deg, var(--primary), var(--accent)); border: none; color: #08080d; padding: 10px 20px; border-radius: 50px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
         .comments-input-area button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        /* ===== STORY CREATE / VIEWER (unchanged logic, new palette) ===== */
+        /* ===== STORY CREATE / VIEWER ===== */
         .story-create-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(14px); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; }
         .story-create-modal.active { display: flex; }
         .story-create-box { background: #120c1e; border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 380px; padding: 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
@@ -425,7 +426,7 @@
             <a href="index.html" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>الرئيسية</span></a>
             <a href="reels.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg><span>Reels</span></a>
             <a href="chat.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg><span>الدردشة</span></a>
-            <a href="profile.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span>الملف</span></a>
+            <a href="profile.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 4 2 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span>الملف</span></a>
         </nav>
     </div>
 
@@ -614,20 +615,23 @@
             }
         }
 
-        // ====== المتابعة ======
+        // ====== المتابعة (مع تحديث الأعداد) ======
         async function toggleFollow(authorUid, btnEl) {
             if (!currentUser) { showAlert('يجب تسجيل الدخول للمتابعة.'); return; }
             if (!authorUid || authorUid === currentUser.uid) return;
             const isFollowing = userFollowing.includes(authorUid);
             btnEl.disabled = true;
             try {
-                const { db, doc, updateDoc, arrayUnion, arrayRemove } = window.ZephyrApp;
+                const { db, doc, updateDoc, arrayUnion, arrayRemove, increment } = window.ZephyrApp;
                 const myRef = doc(db, "users", currentUser.uid);
+                const targetRef = doc(db, "users", authorUid);
                 if (isFollowing) {
-                    await updateDoc(myRef, { following: arrayRemove(authorUid) });
+                    await updateDoc(myRef, { following: arrayRemove(authorUid), followingCount: increment(-1) });
+                    await updateDoc(targetRef, { followers: arrayRemove(currentUser.uid), followersCount: increment(-1) });
                     userFollowing = userFollowing.filter(id => id !== authorUid);
                 } else {
-                    await updateDoc(myRef, { following: arrayUnion(authorUid) });
+                    await updateDoc(myRef, { following: arrayUnion(authorUid), followingCount: increment(1) });
+                    await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid), followersCount: increment(1) });
                     userFollowing.push(authorUid);
                 }
                 document.querySelectorAll(`.btn-follow-mini[data-uid="${authorUid}"]`).forEach(b => {
@@ -949,7 +953,7 @@
             playCurrentStory();
         }
 
-        // ====== نظام المنشورات (بأسلوب انستغرام) ======
+        // ====== نظام المنشورات (مع تحديث الإعجابات) ======
         const POSTS_LIMIT = 5;
 
         function loadPosts() {
@@ -1116,6 +1120,7 @@
             return 'منذ ' + diffWeeks + ' أسبوع';
         }
 
+        // ====== الإعجاب مع تحديث totalLikes ======
         async function toggleLikePost(postId) {
             if (!currentUser) { showAlert('يجب تسجيل الدخول للإعجاب.'); return; }
             const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
@@ -1129,10 +1134,27 @@
             else { likeBtn.classList.add('liked'); currentLikes += 1; }
             likeSpan.textContent = currentLikes;
             try {
-                const { db, doc, updateDoc, arrayUnion, arrayRemove } = window.ZephyrApp;
+                const { db, doc, updateDoc, arrayUnion, arrayRemove, increment } = window.ZephyrApp;
                 const postRef = doc(db, "posts", postId);
-                if (isLiked) await updateDoc(postRef, { likedBy: arrayRemove(currentUser.uid) });
-                else await updateDoc(postRef, { likedBy: arrayUnion(currentUser.uid) });
+                const postSnap = await getDoc(postRef);
+                if (!postSnap.exists()) throw new Error('المنشور غير موجود');
+                const postData = postSnap.data();
+                const authorUid = postData.userId;
+                // تحديث الإعجابات في المنشور
+                if (isLiked) {
+                    await updateDoc(postRef, { likedBy: arrayRemove(currentUser.uid) });
+                    if (authorUid) {
+                        // إنقاص totalLikes لصاحب المنشور
+                        const userRef = doc(db, "users", authorUid);
+                        await updateDoc(userRef, { totalLikes: increment(-1) });
+                    }
+                } else {
+                    await updateDoc(postRef, { likedBy: arrayUnion(currentUser.uid) });
+                    if (authorUid) {
+                        const userRef = doc(db, "users", authorUid);
+                        await updateDoc(userRef, { totalLikes: increment(1) });
+                    }
+                }
             } catch (err) {
                 console.error('خطأ:', err);
                 if (isLiked) { likeBtn.classList.add('liked'); likeSpan.textContent = currentLikes + 1; }
@@ -1303,6 +1325,9 @@
                 await addDoc(collection(db, "posts", activePostId, "comments"), {
                     author: sanitize(authorName), userId: currentUser.uid, text: sanitize(text), createdAt: serverTimestamp()
                 });
+                // زيادة عدد التعليقات
+                const postRef = doc(db, "posts", activePostId);
+                await updateDoc(postRef, { commentsCount: increment(1) });
                 input.value = '';
             } catch (err) {
                 console.error('خطأ:', err);
