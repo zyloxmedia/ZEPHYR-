@@ -1,0 +1,2916 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0f">
+  <title>ZEPHYR - الملف الشخصي</title>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, updateDoc, setDoc, arrayUnion, arrayRemove, increment, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-stk7sia-kJ_PzVMuSI5gmyqR5yTtR_A",
+      authDomain: "zephyr-8df18.firebaseapp.com",
+      projectId: "zephyr-8df18",
+      storageBucket: "zephyr-8df18.firebasestorage.app",
+      messagingSenderId: "836989543748",
+      appId: "1:836989543748:web:fc07d9e4a79172482ce311"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.ZephyrProfile = {
+      auth, db, onAuthStateChanged, updateProfile, signOut,
+      collection, query, where, orderBy, getDocs, doc, getDoc,
+      updateDoc, setDoc, arrayUnion, arrayRemove, increment, onSnapshot, addDoc, deleteDoc
+    };
+  </script>
+
+  <style>
+    /* ====== نفس هوية ZEPHYR ====== */
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+    :root {
+      --bg-main: #0a0a0f;
+      --bg-card: rgba(10, 10, 20, 0.88);
+      --bg-input: rgba(0, 0, 0, 0.8);
+      --primary: #00e5ff;
+      --primary-hover: #00b8d4;
+      --primary-glow: rgba(0, 229, 255, 0.55);
+      --accent: #ff00e5;
+      --accent-glow: rgba(255, 0, 229, 0.45);
+      --gold: #ffcc00;
+      --text-main: #f0f8ff;
+      --text-muted: #a0b0c0;
+      --border-color: rgba(0, 229, 255, 0.32);
+      --danger: #ef4444;
+      --success: #10b981;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 22px;
+      --radius-pill: 999px;
+      --nav-height: 64px;
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --font-display: 'Orbitron', sans-serif;
+      --font-body: 'Rajdhani', sans-serif;
+      --glow-soft: 0 0 18px var(--primary-glow);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: var(--font-body); }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding-bottom: calc(var(--nav-height) + 10px);
+      background-image:
+        radial-gradient(circle at 10% 0%, rgba(0, 229, 255, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 90% 30%, rgba(255, 0, 229, 0.06) 0%, transparent 50%);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page-wrap { max-width: 460px; margin: 0 auto; }
+
+    .profile-top-bar {
+      position: sticky; top: 0; z-index: 30;
+      display: flex; align-items: center; justify-content: center;
+      padding: 12px 16px;
+      background: linear-gradient(to bottom, rgba(10,10,15,0.92), rgba(10,10,15,0.4));
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(0,229,255,0.12);
+    }
+    .profile-top-bar span {
+      font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; letter-spacing: 2px;
+      background: linear-gradient(to right, #00e5ff, #ff00e5, #ffcc00);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .top-bar-icon-btn {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--text-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; padding: 6px;
+      border-radius: 50%; transition: var(--transition);
+    }
+    .top-bar-icon-btn:hover { color: var(--primary); background: rgba(0,229,255,0.08); }
+    .top-bar-icon-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    .profile-header {
+      padding: 22px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .avatar-box {
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 2.1rem;
+      font-weight: 900;
+      color: #08080d;
+      margin-bottom: 12px;
+      box-shadow: 0 0 30px var(--primary-glow), 0 4px 20px rgba(255, 0, 229, 0.25);
+      border: 3px solid var(--bg-main);
+      transition: var(--transition);
+      position: relative;
+    }
+    .avatar-box::after {
+      content: '';
+      position: absolute; inset: -3px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      background: linear-gradient(135deg, var(--primary), var(--accent)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      opacity: 0.7;
+    }
+    .avatar-box:active { transform: scale(0.96); }
+
+    .user-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+    .user-name {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--text-main);
+    }
+    .user-badge {
+      font-size: 0.55rem; background: rgba(0,229,255,0.15); color: var(--primary);
+      padding: 2px 8px; border-radius: 20px; border: 1px solid rgba(0,229,255,0.3); flex-shrink: 0;
+      font-family: var(--font-body); font-weight: 700; letter-spacing: 0.5px;
+    }
+    .user-email {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .user-bio {
+      font-size: 0.85rem;
+      color: rgba(240,248,255,0.85);
+      max-width: 320px;
+      line-height: 1.4;
+      margin-bottom: 14px;
+      white-space: pre-line;
+    }
+
+    .stats-container {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      width: 100%;
+      max-width: 340px;
+      justify-content: space-around;
+    }
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      padding: 6px 4px;
+      border-radius: var(--radius-sm);
+    }
+    .stat-item:hover {
+      background: rgba(0, 229, 255, 0.06);
+    }
+    .stat-item:active { transform: scale(0.95); }
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: block;
+    }
+    .stat-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .action-section {
+      padding: 0 20px 18px;
+      max-width: 420px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .btn-actions-group { display: flex; gap: 8px; }
+    .btn-actions-group.stacked { flex-direction: column; }
+
+    .btn-pill {
+      flex: 1;
+      border: none;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: var(--font-body);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-pill:active { transform: scale(0.97); }
+
+    .btn-primary-grad {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #08080d;
+      box-shadow: var(--glow-soft);
+    }
+    .btn-primary-grad:hover { transform: translateY(-2px); box-shadow: 0 6px 25px var(--primary-glow); }
+
+    .btn-following {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+    .btn-following:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: #ef4444; }
+
+    .btn-message {
+      background: var(--success);
+      color: #062018;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+    }
+    .btn-message:hover { box-shadow: 0 6px 25px rgba(16, 185, 129, 0.5); }
+
+    .btn-icon-square {
+      width: 42px; height: 42px; flex: 0 0 42px;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: var(--transition);
+    }
+    .btn-icon-square:hover { border-color: var(--primary); color: var(--primary); box-shadow: var(--glow-soft); }
+    .btn-icon-square svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    .btn-logout {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      padding: 11px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      width: 100%;
+      transition: var(--transition);
+      font-family: var(--font-body);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-logout:hover { background: rgba(239, 68, 68, 0.18); box-shadow: 0 0 20px rgba(239, 68, 68, 0.15); }
+
+    .tabs-container {
+      display: flex;
+      justify-content: space-around;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-main);
+      position: sticky;
+      top: 45px;
+      z-index: 20;
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 12px 0;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border-bottom: 2px solid transparent;
+      transition: var(--transition);
+      font-family: var(--font-body);
+      letter-spacing: 0.3px;
+    }
+    .tab-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      transition: var(--transition);
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      text-shadow: 0 0 20px var(--primary-glow);
+    }
+    .tab-btn.active svg {
+      stroke: var(--primary);
+      fill: var(--primary);
+      filter: drop-shadow(0 0 8px var(--primary-glow));
+    }
+    .tab-btn:hover:not(.active) { color: var(--text-main); }
+
+    .main-tabs .tab-btn { flex-direction: row; font-size: 0.85rem; padding: 14px 0; gap: 7px; }
+    .main-tabs .tab-btn svg { width: 22px; height: 22px; }
+
+    .sub-tabs {
+      justify-content: space-around;
+      background: var(--bg-card, rgba(255,255,255,0.02));
+      top: 89px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .sub-tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 9px 2px;
+      color: var(--text-muted);
+      font-size: 0.62rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      border-bottom: 2px solid transparent;
+      transition: var(--transition);
+      font-family: var(--font-body);
+    }
+    .sub-tab-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; transition: var(--transition); }
+    .sub-tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .sub-tab-btn.active svg { stroke: var(--primary); fill: var(--primary); filter: drop-shadow(0 0 6px var(--primary-glow)); }
+    .sub-tab-btn:hover:not(.active) { color: var(--text-main); }
+
+    /* ====== شبكة المحتوى (للعرض الشبكي للريلزات فقط) ====== */
+    .content-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      padding: 3px;
+      padding-bottom: 140px;
+    }
+    .grid-item {
+      aspect-ratio: 9/16;
+      background: #050508;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .grid-item:active { transform: scale(0.97); }
+    .grid-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+    .grid-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .grid-item-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 6px 8px;
+      background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+      display: flex; align-items: center; gap: 4px;
+      pointer-events: none;
+    }
+    .grid-item-overlay svg { width: 13px; height: 13px; fill: #fff; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8)); }
+    .grid-item-overlay span { font-size: 0.72rem; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
+    .grid-item-play {
+      position: absolute; top: 6px; left: 6px;
+      width: 20px; height: 20px; opacity: 0.9;
+    }
+    .grid-item-play svg { width: 100%; height: 100%; fill: #fff; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8)); }
+
+    .grid-item-menu {
+      position: absolute; top: 6px; right: 6px;
+      z-index: 5;
+    }
+    .grid-item-menu .menu-btn {
+      background: rgba(0,0,0,0.6);
+      border: none;
+      color: #fff;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: var(--transition);
+      font-size: 0.7rem;
+    }
+    .grid-item-menu .menu-btn:hover { background: rgba(239,68,68,0.8); }
+    .grid-item-menu .menu-dropdown {
+      display: none;
+      position: absolute;
+      top: 30px; right: 0;
+      background: #120c1e;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      min-width: 140px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      overflow: hidden;
+    }
+    .grid-item-menu .menu-dropdown.show { display: block; }
+    .grid-item-menu .menu-dropdown button {
+      width: 100%;
+      text-align: right;
+      background: none;
+      border: none;
+      color: var(--text-main);
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-family: var(--font-body);
+    }
+    .grid-item-menu .menu-dropdown button:hover { background: rgba(255,255,255,0.06); }
+    .grid-item-menu .menu-dropdown button.danger { color: #fca5a5; }
+
+    .grid-empty-state {
+      grid-column: span 3;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; text-align: center; color: var(--text-muted);
+      padding: 80px 20px;
+      font-size: 0.85rem;
+    }
+    .grid-empty-state svg { width: 40px; height: 40px; stroke: var(--text-muted); fill: none; stroke-width: 1.5; opacity: 0.6; }
+
+    /* ====== حاوية المنشورات (بطاقات كاملة) ====== */
+    .posts-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 3px 0 140px;
+    }
+
+    /* ====== بطاقة المنشور (مطابقة للصفحة الرئيسية) ====== */
+    .post-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      backdrop-filter: blur(12px);
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .post-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--accent), var(--gold), var(--primary));
+      opacity: 0; transition: var(--transition);
+    }
+    .post-card:hover::before { opacity: 1; }
+    .post-card:hover { border-color: var(--primary); box-shadow: 0 10px 40px rgba(0, 229, 255, 0.12); }
+
+    .post-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px; gap: 8px;
+    }
+    .post-author {
+      display: flex; align-items: center; gap: 10px; min-width: 0;
+    }
+    .user-avatar {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem; color: #08080d; box-shadow: 0 0 10px var(--primary-glow);
+    }
+    .author-info { min-width: 0; }
+    .author-name-row {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .author-name {
+      font-weight: 700; font-size: 0.92rem;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .author-badge {
+      font-size: 0.58rem; background: rgba(0,229,255,0.15); color: var(--primary);
+      padding: 2px 7px; border-radius: 20px; border: 1px solid rgba(0,229,255,0.3); flex-shrink: 0;
+    }
+    .post-time {
+      font-size: 0.68rem; color: var(--text-muted); display: block; margin-top: 1px;
+    }
+    .btn-follow-mini {
+      font-size: 0.7rem; font-weight: 700; padding: 4px 12px; border-radius: var(--radius-pill);
+      background: linear-gradient(135deg, var(--primary), var(--accent)); color: #08080d; border: none;
+      cursor: pointer; flex-shrink: 0; transition: var(--transition);
+    }
+    .btn-follow-mini.following {
+      background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--border-color);
+    }
+    .post-menu-wrap {
+      position: relative; flex-shrink: 0;
+    }
+    .btn-post-menu {
+      background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex;
+    }
+    .btn-post-menu:hover { color: var(--text-main); }
+    .btn-post-menu svg { width: 20px; height: 20px; }
+    .post-menu-dropdown {
+      display: none; position: absolute; top: 30px; left: 0; z-index: 20;
+      background: #120c1e; border: 1px solid var(--border-color); border-radius: var(--radius-sm);
+      min-width: 160px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); overflow: hidden;
+    }
+    .post-menu-dropdown.show { display: block; }
+    .post-menu-dropdown button {
+      width: 100%; text-align: right; background: none; border: none; color: var(--text-main);
+      padding: 10px 14px; font-size: 0.82rem; cursor: pointer; display: block; font-family: var(--font-body);
+    }
+    .post-menu-dropdown button:hover { background: rgba(255,255,255,0.06); }
+    .post-menu-dropdown button.danger { color: #fca5a5; }
+
+    .post-body {
+      font-size: 0.92rem; line-height: 1.6; margin-bottom: 10px; word-break: break-word; white-space: pre-wrap;
+    }
+    .post-body .author-name-inline {
+      font-weight: 700; margin-left: 6px;
+    }
+
+    .post-image-container {
+      position: relative; border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 10px;
+      max-height: 460px; display: flex; align-items: center; justify-content: center; background: #000; cursor: pointer;
+    }
+    .post-image-container img {
+      width: 100%; height: auto; max-height: 460px; object-fit: contain; display: block;
+    }
+    .dbl-tap-heart {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+      width: 90px; height: 90px; fill: #fff; filter: drop-shadow(0 0 18px var(--accent-glow));
+      pointer-events: none; opacity: 0;
+    }
+    .dbl-tap-heart.burst { animation: heartBurst 0.75s ease; }
+    @keyframes heartBurst {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      30% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+      45% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
+      80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
+    .post-footer {
+      display: flex; align-items: center; justify-content: space-between; padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .post-actions-left {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .action-btn {
+      background: none; border: none; color: var(--text-main);
+      cursor: pointer; display: flex; align-items: center; gap: 5px;
+      font-size: 0.78rem; padding: 6px 8px; border-radius: var(--radius-pill);
+      transition: var(--transition);
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.05); }
+    .action-btn.liked { color: var(--accent); }
+    .action-btn.liked svg { fill: var(--accent); filter: drop-shadow(0 0 6px var(--accent-glow)); }
+    .action-btn.saved { color: var(--primary); }
+    .action-btn.saved svg { fill: var(--primary); }
+    .action-btn.reposted { color: var(--gold); }
+    .action-btn.reposted svg { fill: var(--gold); filter: drop-shadow(0 0 6px rgba(255,204,0,0.5)); }
+    .action-btn svg {
+      width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2; flex-shrink: 0;
+    }
+    .action-btn.liked svg, .action-btn.saved svg, .action-btn.reposted svg { stroke: none; }
+
+    .likes-line {
+      font-size: 0.82rem; font-weight: 700; margin: 6px 0 4px;
+    }
+    .view-comments-link {
+      font-size: 0.78rem; color: var(--text-muted); background: none; border: none; cursor: pointer;
+      padding: 0; margin-bottom: 4px; display: block;
+    }
+    .view-comments-link:hover { color: var(--text-main); }
+
+    /* ====== الشريط السفلي ====== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--nav-height);
+      max-width: 460px; margin: 0 auto;
+      background: rgba(10, 10, 15, 0.95);
+      backdrop-filter: blur(18px);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+    .bottom-nav.hidden {
+      transform: translateY(100%);
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.6rem;
+      font-weight: 600;
+      transition: var(--transition);
+      padding: 4px 12px;
+      font-family: var(--font-body);
+    }
+    .nav-item svg { width: 24px; height: 24px; fill: currentColor; transition: var(--transition); }
+    .nav-item.active, .nav-item:hover { color: var(--primary); text-shadow: 0 0 10px var(--primary-glow); }
+    .nav-item.active svg { filter: drop-shadow(0 0 10px var(--primary-glow)); }
+
+    /* ====== عارض الريلزات (مطابق لـ reels.html) ====== */
+    .reels-viewer-modal {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 300;
+      display: none;
+      flex-direction: column;
+    }
+    .reels-viewer-modal.active { display: flex; }
+
+    .reels-viewer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.85), transparent);
+      color: #fff;
+      z-index: 10;
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      pointer-events: none;
+    }
+    .reels-viewer-header > * { pointer-events: auto; }
+    .reels-viewer-header span {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      background: linear-gradient(to right, #00e5ff, #ff00e5, #ffcc00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .reels-viewer-back-btn {
+      background: rgba(10,10,15,0.55);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      backdrop-filter: blur(8px);
+    }
+    .reels-viewer-back-btn:hover { border-color: var(--primary); box-shadow: var(--glow-soft); }
+    .reels-viewer-back-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+
+    .reels-viewer-container {
+      flex: 1;
+      overflow-y: auto;
+      scroll-snap-type: y mandatory;
+      display: flex;
+      flex-direction: column;
+      max-width: 460px;
+      margin: 0 auto;
+      width: 100%;
+      scrollbar-width: none;
+      background: #000;
+    }
+    .reels-viewer-container::-webkit-scrollbar { display: none; }
+
+    .reel-viewer-item {
+      height: 100vh;
+      width: 100%;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      position: relative;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .reel-viewer-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .reel-viewer-item .progress-container-top {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 15; height: 3px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .reel-viewer-item .progress-bar-top {
+      height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent));
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    .reel-viewer-item .mute-btn {
+      position: absolute; top: 70px; left: 14px; z-index: 20;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(10,10,15,0.55); border: 1px solid var(--border-color);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .reel-viewer-item .mute-btn:hover { border-color: var(--primary); box-shadow: var(--glow-soft); }
+    .reel-viewer-item .mute-btn svg { width: 18px; height: 18px; fill: var(--text-main); }
+
+    .reel-viewer-item .play-pause-icon {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.6);
+      z-index: 12; width: 68px; height: 68px; background: rgba(0,0,0,0.55); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none;
+      transition: transform 0.25s ease, opacity 0.25s ease; backdrop-filter: blur(6px);
+      border: 1px solid var(--border-color); box-shadow: var(--glow-soft);
+    }
+    .reel-viewer-item .play-pause-icon.active { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .reel-viewer-item .play-pause-icon svg { width: 34px; height: 34px; fill: var(--primary); }
+
+    .reel-viewer-item .double-tap-heart {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+      z-index: 13; width: 100px; height: 100px; pointer-events: none; opacity: 0;
+    }
+    .reel-viewer-item .double-tap-heart svg { width: 100%; height: 100%; fill: var(--accent); filter: drop-shadow(0 0 20px var(--accent-glow)); }
+    .reel-viewer-item .double-tap-heart.animate { animation: heartBurst 0.75s ease; }
+    @keyframes heartBurst {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      30% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+      45% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
+      80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
+    .reel-viewer-item .reel-click-area {
+      position: absolute; inset: 0; z-index: 5; cursor: pointer;
+    }
+
+    .reel-viewer-item .reel-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 60px 14px 18px;
+      background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.35) 55%, transparent 100%);
+      display: flex; justify-content: space-between; align-items: flex-end; z-index: 10;
+      pointer-events: none;
+    }
+    .reel-viewer-item .reel-overlay > * { pointer-events: auto; }
+
+    .reel-viewer-item .reel-info { display: flex; flex-direction: column; gap: 8px; max-width: 68%; }
+    .reel-viewer-item .author-name-row { display: flex; align-items: center; gap: 6px; }
+    .reel-viewer-item .author-name {
+      font-size: 0.95rem; font-weight: 700; color: var(--text-main);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.9); cursor: pointer;
+      transition: var(--transition);
+    }
+    .reel-viewer-item .author-name:hover { color: var(--primary); text-shadow: 0 0 16px var(--primary-glow); }
+    .reel-viewer-item .author-badge {
+      font-size: 0.55rem; background: rgba(0,229,255,0.15); color: var(--primary);
+      padding: 2px 7px; border-radius: 20px; border: 1px solid rgba(0,229,255,0.3); flex-shrink: 0;
+    }
+    .reel-viewer-item .reel-caption {
+      font-size: 0.85rem; color: rgba(240,248,255,0.92);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.9); line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    .reel-viewer-item .reel-actions {
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+    .reel-viewer-item .avatar-follow-container {
+      position: relative; margin-bottom: 2px; display: flex; flex-direction: column; align-items: center;
+    }
+    .reel-viewer-item .reel-avatar {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.1rem; color: #08080d;
+      border: 2px solid var(--bg-main); cursor: pointer;
+      box-shadow: 0 0 14px var(--primary-glow);
+      transition: var(--transition);
+    }
+    .reel-viewer-item .reel-avatar:hover { transform: scale(1.08); box-shadow: 0 0 22px var(--primary-glow); }
+    .reel-viewer-item .follow-btn-only {
+      position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+      width: 22px; height: 22px; background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #08080d; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900;
+      border: 2px solid var(--bg-main); cursor: pointer; transition: var(--transition);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .reel-viewer-item .follow-btn-only:hover { transform: translateX(-50%) scale(1.15); }
+
+    .reel-viewer-item .action-btn {
+      background: none; border: none; color: var(--text-main); cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      font-size: 0.68rem; font-weight: 700; transition: var(--transition);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+      padding: 4px;
+    }
+    .reel-viewer-item .action-btn svg {
+      width: 29px; height: 29px; fill: none; stroke: currentColor; stroke-width: 1.8;
+      filter: drop-shadow(0 2px 10px rgba(0,0,0,0.6));
+      transition: var(--transition);
+    }
+    .reel-viewer-item .action-btn:active svg { transform: scale(0.85); }
+    .reel-viewer-item .action-btn:hover { transform: scale(1.05); }
+    .reel-viewer-item .action-btn.liked { color: var(--accent); }
+    .reel-viewer-item .action-btn.liked svg { fill: var(--accent); stroke: none; filter: drop-shadow(0 0 8px var(--accent-glow)); }
+    .reel-viewer-item .action-btn.saved { color: var(--primary); }
+    .reel-viewer-item .action-btn.saved svg { fill: var(--primary); stroke: none; filter: drop-shadow(0 0 8px var(--primary-glow)); }
+    .reel-viewer-item .action-btn.reposted { color: var(--gold); }
+    .reel-viewer-item .action-btn.reposted svg { fill: var(--gold); stroke: none; filter: drop-shadow(0 0 8px rgba(255,204,0,0.5)); }
+
+    .reel-viewer-item .delete-btn {
+      background: none; border: none; color: rgba(240,248,255,0.45); cursor: pointer;
+      font-size: 0.68rem; padding: 4px 10px; border-radius: 12px;
+      transition: var(--transition); display: flex; align-items: center; gap: 4px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+    }
+    .reel-viewer-item .delete-btn:hover { color: var(--danger); background: rgba(239,68,68,0.15); }
+    .reel-viewer-item .delete-btn svg { width: 15px; height: 15px; fill: currentColor; }
+
+    body.modal-open .bottom-nav { display: none; }
+
+    /* ====== مودال التعليقات ====== */
+    .comments-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(14px);
+      z-index: 400; display: none; justify-content: flex-end; flex-direction: column;
+    }
+    .comments-modal.show { display: flex; }
+    .comments-box {
+      background: #120c1e; border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);
+      height: 60vh; max-height: 80vh; display: flex; flex-direction: column;
+      padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+      max-width: 460px; margin: 0 auto; width: 100%;
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.9); border-top: 1px solid var(--border-color);
+    }
+    .comments-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-weight: 700; flex-shrink: 0; font-family: var(--font-body);
+      color: var(--text-main);
+    }
+    .comments-header span:last-child {
+      cursor: pointer; color: var(--text-muted); font-size: 1.2rem;
+      transition: var(--transition); padding: 4px 8px; border-radius: 8px;
+    }
+    .comments-header span:last-child:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .comments-list {
+      flex: 1; overflow-y: auto; padding: 12px 0; display: flex; flex-direction: column; gap: 10px;
+    }
+    .comments-list::-webkit-scrollbar { width: 4px; }
+    .comments-list::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+    .comment-item {
+      display: flex; gap: 10px; font-size: 0.9rem; padding: 4px 0;
+      align-items: flex-start;
+    }
+    .comment-user { font-weight: 700; color: var(--primary); flex-shrink: 0; }
+    .comment-text { color: #e5e7eb; word-break: break-word; }
+    .comments-input-area {
+      display: flex; gap: 8px; padding-top: 10px; flex-shrink: 0; align-items: center;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .comments-input-area input {
+      flex: 1; background: var(--bg-input); border: 1px solid var(--border-color);
+      border-radius: 50px; padding: 10px 16px; color: #fff; outline: none; font-size: 0.9rem;
+      transition: var(--transition);
+      font-family: var(--font-body);
+    }
+    .comments-input-area input:focus {
+      border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow);
+    }
+    .comments-input-area button {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border: none; color: #08080d; padding: 10px 20px; border-radius: 50px;
+      font-weight: 700; cursor: pointer; flex-shrink: 0; white-space: nowrap;
+      transition: var(--transition); font-family: var(--font-body);
+      box-shadow: var(--glow-soft);
+    }
+    .comments-input-area button:hover { transform: translateY(-2px); box-shadow: 0 6px 25px var(--primary-glow); }
+
+    /* ====== مودال قائمة المتابعين ====== */
+    .follow-list-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(14px);
+      z-index: 500;
+      display: none;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .follow-list-modal.active { display: flex; }
+    .follow-list-box {
+      background: #120c1e;
+      width: 100%;
+      max-width: 460px;
+      max-height: 75vh;
+      border-top-left-radius: var(--radius-lg);
+      border-top-right-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid var(--border-color);
+      box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.9);
+      animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .follow-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .follow-list-header h3 {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .follow-list-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+    .follow-list-close:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+    .follow-list-container {
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 4px 0;
+    }
+    .follow-list-container::-webkit-scrollbar { width: 4px; }
+    .follow-list-container::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+    .follow-user-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .follow-user-item:hover { background: rgba(255, 255, 255, 0.04); }
+    .follow-user-info { display: flex; align-items: center; gap: 10px; }
+    .follow-user-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 0.9rem; color: #08080d; flex-shrink: 0;
+    }
+    .follow-user-name { font-size: 0.88rem; font-weight: 600; color: var(--text-main); }
+    .follow-user-action { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+    .follow-user-action button {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border: none; color: #08080d;
+      padding: 6px 13px; border-radius: 20px;
+      font-size: 0.74rem; font-weight: 700;
+      cursor: pointer; transition: var(--transition);
+      font-family: var(--font-body); white-space: nowrap;
+    }
+    .follow-user-action button:hover { transform: translateY(-1px); box-shadow: var(--glow-soft); }
+    .follow-user-action button.unfollow {
+      background: rgba(255, 255, 255, 0.06); color: var(--text-muted);
+      border: 1px solid var(--border-color);
+    }
+    .follow-user-action button.unfollow:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: #ef4444; }
+    .follow-user-action button.message { background: var(--success); color: #062018; }
+    .follow-user-action button.message:hover { box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
+
+    /* ====== مودال تعديل الملف الشخصي ====== */
+    .edit-profile-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
+      z-index: 600; display: none; justify-content: center; align-items: center; padding: 20px;
+    }
+    .edit-profile-modal.show { display: flex; }
+    .edit-profile-box {
+      background: #120c1e; border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg); padding: 22px; width: 100%; max-width: 380px;
+      display: flex; flex-direction: column; gap: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+    }
+    .edit-profile-box h3 {
+      text-align: center; font-family: var(--font-display); font-size: 1.05rem;
+      background: linear-gradient(to right, #00e5ff, #ff00e5, #ffcc00);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+    .field-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; margin-bottom: -4px; }
+    .edit-profile-box input, .edit-profile-box textarea {
+      background: var(--bg-input); border: 1px solid var(--border-color);
+      color: var(--text-main); padding: 10px 12px; border-radius: var(--radius-sm);
+      font-family: var(--font-body); font-size: 0.9rem; outline: none; transition: var(--transition);
+      resize: none;
+    }
+    .edit-profile-box input:focus, .edit-profile-box textarea:focus {
+      border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow);
+    }
+    #editProfileStatus { text-align: center; font-size: 0.8rem; min-height: 20px; color: var(--primary); font-weight: 600; }
+    .edit-btn-group { display: flex; gap: 8px; margin-top: 4px; }
+    .edit-btn-group button {
+      flex: 1; padding: 11px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; border: none;
+      font-family: var(--font-body); transition: var(--transition); font-size: 0.85rem;
+    }
+    .edit-btn-group .save-btn { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #08080d; box-shadow: var(--glow-soft); }
+    .edit-btn-group .save-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 25px var(--primary-glow); }
+    .edit-btn-group .save-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .edit-btn-group .cancel-btn { background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.06); }
+    .edit-btn-group .cancel-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+    .toast {
+      position: fixed; bottom: calc(var(--nav-height) + 16px); left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #120c1e; border: 1px solid var(--border-color); color: var(--text-main);
+      padding: 10px 18px; border-radius: var(--radius-pill); font-size: 0.8rem; font-weight: 600;
+      z-index: 900; opacity: 0; pointer-events: none; transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      max-width: 90%; text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 380px) {
+      .avatar-box { width: 78px; height: 78px; font-size: 1.8rem; }
+      .user-name { font-size: 1rem; }
+      .stat-value { font-size: 1rem; }
+    }
+
+    @media (min-width: 600px) {
+      .profile-top-bar, .tabs-container, .reels-viewer-container { max-width: 420px; margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-wrap">
+
+    <div class="profile-top-bar">
+      <button class="top-bar-icon-btn" id="backBtn" style="display:none;" onclick="history.back()">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span>ZEPHYR PROFILE</span>
+    </div>
+
+    <div class="profile-header">
+      <div class="avatar-box" id="avatarLetter">?</div>
+      <div class="user-name-row">
+        <span class="user-name" id="userNameDisplay">@مستخدم</span>
+        <span class="user-badge">Gamer</span>
+      </div>
+      <div class="user-email" id="userEmailDisplay">...</div>
+      <div class="user-bio" id="userBioDisplay"></div>
+
+      <div class="stats-container">
+        <div class="stat-item" id="statFollowers">
+          <span class="stat-value" id="followersCount">0</span>
+          <span class="stat-label">متابعون</span>
+        </div>
+        <div class="stat-item" id="statFollowing">
+          <span class="stat-value" id="followingCount">0</span>
+          <span class="stat-label">متابَعون</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="likesCount">0</span>
+          <span class="stat-label">❤️ إعجابات</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-section" id="actionSection"></div>
+
+    <div class="tabs-container main-tabs">
+      <button class="tab-btn active" id="tabTypePosts" onclick="switchContentType('posts')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+        <span>منشورات</span>
+      </button>
+      <button class="tab-btn" id="tabTypeReels" onclick="switchContentType('reels')">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+        <span>ريلزات</span>
+      </button>
+      <button class="tab-btn" id="tabTypeVideos" onclick="switchContentType('videos')">
+        <svg viewBox="0 0 24 24"><path d="M21.6 7.2c-.25-1-1.02-1.77-2.02-2.02C17.8 4.7 12 4.7 12 4.7s-5.8 0-7.58.48c-1 .25-1.77 1.02-2.02 2.02C2 9 2 12 2 12s0 3 .4 4.8c.25 1 1.02 1.77 2.02 2.02C6.2 19.3 12 19.3 12 19.3s5.8 0 7.58-.48c1-.25 1.77-1.02 2.02-2.02C22 15 22 12 22 12s0-3-.4-4.8zM10 15.5v-7l6 3.5-6 3.5z"/></svg>
+        <span>فيديوهات</span>
+      </button>
+    </div>
+
+    <div class="tabs-container sub-tabs">
+      <button class="sub-tab-btn active" id="filterMine" onclick="switchFilter('mine')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+        <span id="filterMineLabel">منشوراتي</span>
+      </button>
+      <button class="sub-tab-btn" id="filterLiked" onclick="switchFilter('liked')">
+        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        <span>أعجبت بها</span>
+      </button>
+      <button class="sub-tab-btn" id="filterSaved" onclick="switchFilter('saved')">
+        <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span>محفوظة</span>
+      </button>
+      <button class="sub-tab-btn" id="filterReposted" onclick="switchFilter('reposted')">
+        <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+        <span>أعدت نشرها</span>
+      </button>
+    </div>
+
+    <!-- حاوية المحتوى (للشبكة أو البطاقات) -->
+    <div id="contentContainer">
+      <!-- سيتم ملؤها بواسطة JavaScript -->
+    </div>
+
+  </div>
+
+  <!-- عارض الريلزات -->
+  <div class="reels-viewer-modal" id="reelsViewerModal">
+    <div class="reels-viewer-header">
+      <button class="reels-viewer-back-btn" onclick="closeReelsViewer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span>ZEPHYR REELS</span>
+      <span style="width: 36px;"></span>
+    </div>
+    <div class="reels-viewer-container" id="reelsViewerContainer"></div>
+  </div>
+
+  <!-- مودال التعليقات -->
+  <div class="comments-modal" id="commentsModal" onclick="closeCommentsModal(event)">
+    <div class="comments-box" onclick="event.stopPropagation()">
+      <div class="comments-header">
+        <span>💬 التعليقات</span>
+        <span onclick="closeCommentsModal()">✕</span>
+      </div>
+      <div class="comments-list" id="commentsList"></div>
+      <div class="comments-input-area">
+        <input type="text" id="commentInput" placeholder="أضف تعليقاً..." onkeydown="if(event.key==='Enter'){sendComment();}">
+        <button id="sendCommentBtn" onclick="sendComment()">إرسال</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- مودال قائمة المتابعين -->
+  <div class="follow-list-modal" id="followListModal">
+    <div class="follow-list-box">
+      <div class="follow-list-header">
+        <h3 id="followListTitle">المتابعون</h3>
+        <button class="follow-list-close" onclick="closeFollowListModal()">✕</button>
+      </div>
+      <div class="follow-list-container" id="followListContainer"></div>
+    </div>
+  </div>
+
+  <!-- مودال تعديل الملف الشخصي -->
+  <div class="edit-profile-modal" id="editProfileModal">
+    <div class="edit-profile-box">
+      <h3>✏️ تعديل الملف الشخصي</h3>
+      <span class="field-label">اسم المستخدم</span>
+      <input type="text" id="newDisplayName" placeholder="اكتب اسماً جديداً...">
+      <span class="field-label">النبذة التعريفية</span>
+      <textarea id="newBio" rows="3" placeholder="اكتب نبذة عنك..." maxlength="150"></textarea>
+      <div id="editProfileStatus"></div>
+      <div class="edit-btn-group">
+        <button class="save-btn" id="btnSaveProfile" onclick="updateName()">💾 حفظ</button>
+        <button class="cancel-btn" onclick="closeEditProfileModal()">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <nav class="bottom-nav" id="bottomNav">
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>الرئيسية</span>
+    </a>
+    <a href="reels.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+      <span>Reels</span>
+    </a>
+    <a href="videos.html" class="nav-item" title="ZEPHYR TUBE">
+      <svg viewBox="0 0 24 24"><path d="M21.6 7.2c-.25-1-1.02-1.77-2.02-2.02C17.8 4.7 12 4.7 12 4.7s-5.8 0-7.58.48c-1 .25-1.77 1.02-2.02 2.02C2 9 2 12 2 12s0 3 .4 4.8c.25 1 1.02 1.77 2.02 2.02C6.2 19.3 12 19.3 12 19.3s5.8 0 7.58-.48c1-.25 1.77-1.02 2.02-2.02C22 15 22 12 22 12s0-3-.4-4.8zM10 15.5v-7l6 3.5-6 3.5z"/></svg>
+      <span>TUBE</span>
+    </a>
+    <a href="chat.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+      <span>الدردشة</span>
+    </a>
+    <a href="profile.html" class="nav-item active">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span>الملف</span>
+    </a>
+  </nav>
+
+  <script>
+    // ====== دالة التعقيم ======
+    function sanitize(str) {
+      if (typeof str !== 'string') return '';
+      return str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;' })[m]);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = sanitize(msg);
+      t.classList.add('show');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    // ====== المتغيرات العامة ======
+    let currentUser = null;
+    let targetUserId = null;
+    let targetUserData = null;
+    let currentContentType = 'posts';
+    let currentFilter = 'mine';
+    let lastFilterByType = { posts: 'mine', reels: 'mine', videos: 'mine' };
+    let unsubscribeTargetUser = null;
+    let unsubscribeCurrentUser = null;
+    let userFollowing = [];
+    let userLikedReels = [];
+    let userSavedReels = [];
+    let userRepostedReels = [];
+    let userSavedPosts = [];
+    let userRepostedPosts = [];
+    let currentGridItems = []; // للريلزات فقط
+    let viewerItems = [];
+    let viewerCurrentIndex = 0;
+    let isOwnProfile = false;
+    let cache = {};
+    let isGloballyMuted = false;
+    let viewerObserver = null;
+    let isProcessingLike = false;
+    let isProcessingSave = false;
+    let isProcessingRepost = false;
+    let isProcessingFollow = false;
+    let activeReelForComments = null;
+    let commentsUnsubscribe = null;
+    let activePostForComments = null;
+
+    // ====== انتظار المصادقة ======
+    function waitForAuth() {
+      return new Promise((resolve) => {
+        const { auth, onAuthStateChanged } = window.ZephyrProfile;
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          unsubscribe();
+          resolve(user);
+        });
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const checkInterval = setInterval(() => {
+        if (window.ZephyrProfile) {
+          clearInterval(checkInterval);
+          initApp();
+        }
+      }, 100);
+    });
+
+    async function initApp() {
+      try {
+        const user = await waitForAuth();
+        if (!user) {
+          window.location.replace('login.html');
+          return;
+        }
+        currentUser = user;
+        listenCurrentUser();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        targetUserId = urlParams.get('uid') || currentUser.uid;
+        isOwnProfile = targetUserId === currentUser.uid;
+
+        if (!isOwnProfile) {
+          document.getElementById('backBtn').style.display = 'flex';
+        }
+
+        await ensureUserDocument(targetUserId);
+        await loadProfileData();
+        updateTabsUI();
+        loadContent();
+      } catch (err) {
+        console.error('خطأ في تهيئة الصفحة:', err);
+        document.getElementById('contentContainer').innerHTML = `<div class="grid-empty-state">⚠️ حدث خطأ في تحميل الصفحة. حاول تحديثها.</div>`;
+      }
+    }
+
+    // ====== الاستماع للمستخدم الحالي ======
+    function listenCurrentUser() {
+      const { db, doc, onSnapshot } = window.ZephyrProfile;
+      if (unsubscribeCurrentUser) unsubscribeCurrentUser();
+
+      const userRef = doc(db, "users", currentUser.uid);
+      unsubscribeCurrentUser = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          userFollowing = data.following || [];
+          userFollowing = [...new Set(userFollowing)];
+          userLikedReels = data.likedReels || [];
+          userSavedReels = data.savedReels || [];
+          userRepostedReels = data.repostedReels || [];
+          userSavedPosts = data.savedPosts || [];
+          userRepostedPosts = data.repostedPosts || [];
+          if (targetUserId && !isOwnProfile) {
+            updateFollowButton();
+          }
+        }
+      }, (error) => {
+        console.error("خطأ في استماع المستخدم الحالي:", error);
+      });
+    }
+
+    // ====== تحميل بيانات الملف الشخصي ======
+    async function loadProfileData() {
+      const { db, doc, onSnapshot } = window.ZephyrProfile;
+      if (unsubscribeTargetUser) {
+        unsubscribeTargetUser();
+        unsubscribeTargetUser = null;
+      }
+
+      const userRef = doc(db, "users", targetUserId);
+      unsubscribeTargetUser = onSnapshot(userRef, async (docSnap) => {
+        if (docSnap.exists()) {
+          targetUserData = docSnap.data();
+          updateUI();
+        } else {
+          await createUserDocument(targetUserId);
+        }
+      }, (error) => {
+        console.error("خطأ في الاستماع:", error);
+      });
+    }
+
+    // ====== إنشاء وثيقة المستخدم ======
+    async function createUserDocument(uid) {
+      const { db, doc, setDoc } = window.ZephyrProfile;
+      try {
+        await setDoc(doc(db, "users", uid), {
+          displayName: 'مستخدم ZEPHYR',
+          email: '',
+          bio: 'لاعب في ZEPHYR 🎮',
+          followers: [],
+          following: [],
+          followersCount: 0,
+          followingCount: 0,
+          savedReels: [],
+          likedReels: [],
+          repostedReels: [],
+          savedPosts: [],
+          repostedPosts: [],
+          likedVideos: [],
+          savedVideos: [],
+          totalLikes: 0,
+          createdAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (err) {
+        console.error("خطأ إنشاء وثيقة المستخدم:", err);
+      }
+    }
+
+    async function ensureUserDocument(uid) {
+      const { db, doc, getDoc, setDoc } = window.ZephyrProfile;
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          displayName: 'مستخدم ZEPHYR',
+          email: '',
+          bio: 'لاعب في ZEPHYR 🎮',
+          followers: [],
+          following: [],
+          followersCount: 0,
+          followingCount: 0,
+          savedReels: [],
+          likedReels: [],
+          repostedReels: [],
+          savedPosts: [],
+          repostedPosts: [],
+          likedVideos: [],
+          savedVideos: [],
+          totalLikes: 0,
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+
+    // ====== تحديث واجهة المستخدم ======
+    function updateUI() {
+      const data = targetUserData;
+      let displayName = data.displayName || (isOwnProfile ? currentUser.displayName : 'مستخدم');
+      let email = data.email || (isOwnProfile ? currentUser.email : '');
+      let bio = data.bio || '';
+
+      document.getElementById('userNameDisplay').textContent = '@' + sanitize(displayName);
+      document.getElementById('userEmailDisplay').textContent = sanitize(email);
+      document.getElementById('avatarLetter').textContent = sanitize((displayName.charAt(0) || '؟').toUpperCase());
+
+      const bioEl = document.getElementById('userBioDisplay');
+      bioEl.textContent = sanitize(bio);
+      bioEl.style.display = bio ? 'block' : 'none';
+
+      const followersClean = [...new Set(data.followers || [])];
+      const followingClean = [...new Set(data.following || [])];
+      document.getElementById('followersCount').textContent = followersClean.length;
+      document.getElementById('followingCount').textContent = followingClean.length;
+      document.getElementById('likesCount').textContent = data.totalLikes || 0;
+
+      document.getElementById('statFollowers').onclick = () => showFollowList('followers');
+      document.getElementById('statFollowing').onclick = () => showFollowList('following');
+
+      const actionSec = document.getElementById('actionSection');
+      if (isOwnProfile) {
+        actionSec.innerHTML = `
+          <div class="btn-actions-group">
+            <button class="btn-pill btn-primary-grad" onclick="openEditProfileModal()">✏️ تعديل الملف الشخصي</button>
+            <button class="btn-icon-square" onclick="shareMyProfile()" title="مشاركة">
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+          </div>
+          <button class="btn-logout" onclick="handleSignOut()">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            تسجيل الخروج
+          </button>
+        `;
+      } else {
+        updateFollowButton();
+      }
+    }
+
+    function updateFollowButton() {
+      const actionSec = document.getElementById('actionSection');
+      if (!actionSec || isOwnProfile) return;
+
+      const isFollowing = userFollowing.includes(targetUserId);
+      const isFollower = (targetUserData?.following || []).includes(currentUser.uid);
+      const isFriend = isFollowing && isFollower;
+
+      let buttonsHtml = '';
+
+      if (isFriend) {
+        buttonsHtml = `
+          <button class="btn-pill btn-following" onclick="unfollowUser('${targetUserId}')">✖ إزالة المتابعة</button>
+          <button class="btn-pill btn-message" onclick="goToChat('${targetUserId}')">💬 مراسلة</button>
+        `;
+      } else if (isFollowing) {
+        buttonsHtml = `<button class="btn-pill btn-following" onclick="unfollowUser('${targetUserId}')">✖ إزالة المتابعة</button>`;
+      } else if (isFollower) {
+        buttonsHtml = `<button class="btn-pill btn-primary-grad" onclick="followUser('${targetUserId}')">↩ رد المتابعة</button>`;
+      } else {
+        buttonsHtml = `<button class="btn-pill btn-primary-grad" onclick="followUser('${targetUserId}')">➕ متابعة</button>`;
+      }
+
+      actionSec.innerHTML = `<div class="btn-actions-group">${buttonsHtml}</div>`;
+    }
+
+    // ====== دوال المتابعة ======
+    async function followUser(targetId) {
+      if (isProcessingFollow) return;
+      if (!currentUser || currentUser.uid === targetId) return;
+      isProcessingFollow = true;
+      try {
+        const { db, doc, updateDoc, arrayUnion, increment } = window.ZephyrProfile;
+        const myRef = doc(db, "users", currentUser.uid);
+        const targetRef = doc(db, "users", targetId);
+
+        await ensureUserDocument(targetId);
+
+        await updateDoc(myRef, { following: arrayUnion(targetId), followingCount: increment(1) });
+        await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid), followersCount: increment(1) });
+
+        userFollowing = [...new Set([...userFollowing, targetId])];
+        updateFollowButton();
+        updateViewerFollowButtons(targetId);
+        showToast('تمت المتابعة ✅');
+      } catch (e) {
+        console.error("خطأ المتابعة:", e);
+        showToast('حدث خطأ أثناء المتابعة.');
+      } finally {
+        isProcessingFollow = false;
+      }
+    }
+
+    async function unfollowUser(targetId) {
+      if (isProcessingFollow) return;
+      if (!currentUser || currentUser.uid === targetId) return;
+      isProcessingFollow = true;
+      try {
+        const { db, doc, updateDoc, arrayRemove, increment } = window.ZephyrProfile;
+        const myRef = doc(db, "users", currentUser.uid);
+        const targetRef = doc(db, "users", targetId);
+
+        await updateDoc(myRef, { following: arrayRemove(targetId), followingCount: increment(-1) });
+        await updateDoc(targetRef, { followers: arrayRemove(currentUser.uid), followersCount: increment(-1) });
+
+        userFollowing = userFollowing.filter(id => id !== targetId);
+        updateFollowButton();
+        updateViewerFollowButtons(targetId);
+        showToast('تم إلغاء المتابعة');
+      } catch (e) {
+        console.error("خطأ إزالة المتابعة:", e);
+        showToast('حدث خطأ أثناء إزالة المتابعة.');
+      } finally {
+        isProcessingFollow = false;
+      }
+    }
+
+    function updateViewerFollowButtons(authorId) {
+      document.querySelectorAll(`.reel-viewer-item[data-author-id="${authorId}"] .follow-btn-only`).forEach(btn => {
+        const isFollowing = userFollowing.includes(authorId);
+        btn.style.display = (isFollowing || authorId === currentUser.uid) ? 'none' : 'flex';
+      });
+    }
+
+    async function goToChat(targetId) {
+      if (!currentUser || !targetId || targetId === currentUser.uid) {
+        showToast('لا يمكن المراسلة مع نفسك');
+        return;
+      }
+
+      try {
+        const { db, collection, query, where, getDocs, addDoc } = window.ZephyrProfile;
+        await ensureUserDocument(targetId);
+
+        const chatsRef = collection(db, "chats");
+        const q = query(chatsRef, where("participants", "array-contains", currentUser.uid));
+        const snapshot = await getDocs(q);
+
+        let chatId = null;
+
+        for (const docSnap of snapshot.docs) {
+          const data = docSnap.data();
+          if (!data.isGroup && data.participants && data.participants.length === 2) {
+            if (data.participants.includes(targetId)) {
+              chatId = docSnap.id;
+              break;
+            }
+          }
+        }
+
+        if (!chatId) {
+          const newChatRef = await addDoc(collection(db, "chats"), {
+            isGroup: false,
+            participants: [currentUser.uid, targetId],
+            createdBy: currentUser.uid,
+            createdAt: new Date().toISOString(),
+            lastMessage: '',
+            lastMessageTime: new Date().toISOString(),
+            unreadCount: {}
+          });
+          chatId = newChatRef.id;
+
+          const messagesRef = collection(db, "chats", chatId, "messages");
+          await addDoc(messagesRef, {
+            text: 'بداية المحادثة',
+            userId: 'system',
+            author: 'ZEPHYR',
+            createdAt: new Date().toISOString()
+          });
+        }
+
+        window.location.href = `chat.html?chatId=${chatId}`;
+
+      } catch (err) {
+        console.error("خطأ في فتح الدردشة:", err);
+        showToast('حدث خطأ أثناء فتح الدردشة. حاول مرة أخرى.');
+      }
+    }
+
+    // ====== تبديل نوع المحتوى (منشورات / ريلز) ======
+    function switchContentType(type) {
+      currentContentType = type;
+      currentFilter = lastFilterByType[type] || 'mine';
+      if (type === 'videos' && currentFilter === 'reposted') currentFilter = 'mine';
+      updateTabsUI();
+      loadContent();
+    }
+
+    // ====== تبديل الفلتر (خاصتي / أعجبت بها / محفوظة / أعدت نشرها) ======
+    function switchFilter(filter) {
+      currentFilter = filter;
+      lastFilterByType[currentContentType] = filter;
+      updateTabsUI();
+      loadContent();
+    }
+
+    function updateTabsUI() {
+      document.getElementById('tabTypePosts').classList.toggle('active', currentContentType === 'posts');
+      document.getElementById('tabTypeReels').classList.toggle('active', currentContentType === 'reels');
+      document.getElementById('tabTypeVideos').classList.toggle('active', currentContentType === 'videos');
+      document.getElementById('filterMine').classList.toggle('active', currentFilter === 'mine');
+      document.getElementById('filterLiked').classList.toggle('active', currentFilter === 'liked');
+      document.getElementById('filterSaved').classList.toggle('active', currentFilter === 'saved');
+      document.getElementById('filterReposted').classList.toggle('active', currentFilter === 'reposted');
+      // فيديوهات تيوب لا تحتوي خاصية "إعادة النشر"
+      document.getElementById('filterReposted').style.display = currentContentType === 'videos' ? 'none' : '';
+      const mineLabelByType = { posts: 'منشوراتي', reels: 'ريلزاتي', videos: 'فيديوهاتي' };
+      document.getElementById('filterMineLabel').textContent = mineLabelByType[currentContentType] || 'منشوراتي';
+    }
+
+    function emptyStateHtml(icon, text) {
+      return `<div class="grid-empty-state">
+        <svg viewBox="0 0 24 24">${icon}</svg>
+        <span>${text}</span>
+      </div>`;
+    }
+
+    // ====== تحميل المحتوى حسب النوع + الفلتر ======
+    async function loadContent() {
+      const container = document.getElementById('contentContainer');
+      const cacheKey = `${targetUserId}_${currentContentType}_${currentFilter}`;
+
+      // التحقق من الكاش
+      if (cache[cacheKey] && cache[cacheKey].length > 0) {
+        renderContent(cache[cacheKey]);
+        return;
+      }
+
+      container.innerHTML = emptyStateHtml('<circle cx="12" cy="12" r="9"></circle>', 'جاري التحميل...');
+
+      const { db, collection, query, where, getDocs, doc, getDoc, orderBy } = window.ZephyrProfile;
+      const collectionName = currentContentType === 'posts' ? 'posts' : currentContentType === 'reels' ? 'reels' : 'videos';
+      const itemType = currentContentType === 'posts' ? 'post' : currentContentType === 'reels' ? 'reel' : 'video';
+
+      const privacyMsgs = {
+        liked: ['<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>', 'الإعجابات خاصة بصاحب الحساب'],
+        saved: ['<rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>', 'المحفوظات خاصة بصاحب الحساب'],
+        reposted: ['<path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"></path>', 'إعادة النشر خاصة بصاحب الحساب']
+      };
+
+      try {
+        let items = [];
+
+        if (currentFilter === 'mine') {
+          // جلب محتوى المستخدم نفسه (منشورات أو ريلزات)
+          try {
+            const q = query(collection(db, collectionName), where("userId", "==", targetUserId), orderBy("createdAt", "desc"));
+            const snap = await getDocs(q);
+            snap.forEach(d => items.push({ id: d.id, ...d.data(), type: itemType }));
+          } catch (err) {
+            console.warn('فشل الاستعلام مع orderBy، محاولة بدون ترتيب:', err);
+            const q = query(collection(db, collectionName), where("userId", "==", targetUserId));
+            const snap = await getDocs(q);
+            snap.forEach(d => items.push({ id: d.id, ...d.data(), type: itemType }));
+            items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          }
+        } else if (currentFilter === 'liked') {
+          if (!isOwnProfile) {
+            container.innerHTML = emptyStateHtml(...privacyMsgs.liked);
+            return;
+          }
+          if (currentContentType === 'posts') {
+            // جلب المنشورات التي أعجب بها المستخدم عبر حقل likedBy على المنشور نفسه
+            const q = query(collection(db, "posts"), where("likedBy", "array-contains", targetUserId));
+            const snap = await getDocs(q);
+            snap.forEach(d => items.push({ id: d.id, ...d.data(), type: 'post' }));
+          } else if (currentContentType === 'reels') {
+            const uDoc = await getDoc(doc(db, "users", targetUserId));
+            const likedIds = uDoc.exists() ? (uDoc.data().likedReels || []) : [];
+            const reelPromises = likedIds.map(id => getDoc(doc(db, "reels", id)));
+            const reelSnaps = await Promise.all(reelPromises);
+            reelSnaps.forEach(rDoc => {
+              if (rDoc.exists()) items.push({ id: rDoc.id, ...rDoc.data(), type: 'reel' });
+            });
+          } else {
+            // فيديوهات التيوب التي أعجب بها المستخدم (حقل likedVideos في مستند المستخدم)
+            const uDoc = await getDoc(doc(db, "users", targetUserId));
+            const likedIds = uDoc.exists() ? (uDoc.data().likedVideos || []) : [];
+            const vidPromises = likedIds.map(id => getDoc(doc(db, "videos", id)));
+            const vidSnaps = await Promise.all(vidPromises);
+            vidSnaps.forEach(vDoc => {
+              if (vDoc.exists()) items.push({ id: vDoc.id, ...vDoc.data(), type: 'video' });
+            });
+          }
+          items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        } else if (currentFilter === 'saved') {
+          if (!isOwnProfile) {
+            container.innerHTML = emptyStateHtml(...privacyMsgs.saved);
+            return;
+          }
+          const uDoc = await getDoc(doc(db, "users", targetUserId));
+          const savedIds = currentContentType === 'posts'
+            ? (uDoc.exists() ? (uDoc.data().savedPosts || []) : [])
+            : currentContentType === 'reels'
+              ? (uDoc.exists() ? (uDoc.data().savedReels || []) : [])
+              : (uDoc.exists() ? (uDoc.data().savedVideos || []) : []);
+          const docPromises = savedIds.map(id => getDoc(doc(db, collectionName, id)));
+          const docSnaps = await Promise.all(docPromises);
+          docSnaps.forEach(dSnap => {
+            if (dSnap.exists()) items.push({ id: dSnap.id, ...dSnap.data(), type: itemType });
+          });
+          items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        } else if (currentFilter === 'reposted') {
+          if (currentContentType === 'videos') {
+            // لا توجد ميزة إعادة نشر للفيديوهات الطويلة
+            items = [];
+            cache[cacheKey] = items;
+            renderContent(items);
+            return;
+          }
+          if (!isOwnProfile) {
+            container.innerHTML = emptyStateHtml(...privacyMsgs.reposted);
+            return;
+          }
+          const uDoc = await getDoc(doc(db, "users", targetUserId));
+          const repostedIds = currentContentType === 'posts'
+            ? (uDoc.exists() ? (uDoc.data().repostedPosts || []) : [])
+            : (uDoc.exists() ? (uDoc.data().repostedReels || []) : []);
+          const docPromises = repostedIds.map(id => getDoc(doc(db, collectionName, id)));
+          const docSnaps = await Promise.all(docPromises);
+          docSnaps.forEach(dSnap => {
+            if (dSnap.exists()) items.push({ id: dSnap.id, ...dSnap.data(), type: itemType });
+          });
+          items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        }
+
+        cache[cacheKey] = items;
+        renderContent(items);
+
+      } catch (err) {
+        console.error("خطأ تحميل المحتوى:", err);
+        container.innerHTML = emptyStateHtml('<circle cx="12" cy="12" r="9"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>', 'حدث خطأ أثناء التحميل: ' + err.message);
+      }
+    }
+
+    // ====== عرض المحتوى حسب النوع ======
+    function renderContent(items) {
+      const container = document.getElementById('contentContainer');
+
+      if (items.length === 0) {
+        const typeLabelAr = currentContentType === 'posts' ? 'منشورات' : currentContentType === 'reels' ? 'ريلزات' : 'فيديوهات';
+        const iconsByFilter = {
+          'mine': currentContentType === 'posts'
+            ? '<rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 9h6v6H9z"></path>'
+            : currentContentType === 'videos'
+              ? '<path d="M21.6 7.2c-.25-1-1.02-1.77-2.02-2.02C17.8 4.7 12 4.7 12 4.7s-5.8 0-7.58.48c-1 .25-1.77 1.02-2.02 2.02C2 9 2 12 2 12s0 3 .4 4.8c.25 1 1.02 1.77 2.02 2.02C6.2 19.3 12 19.3 12 19.3s5.8 0 7.58-.48c1-.25 1.77-1.02 2.02-2.02C22 15 22 12 22 12s0-3-.4-4.8zM10 15.5v-7l6 3.5-6 3.5z"></path>'
+              : '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"></path>',
+          'liked': '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>',
+          'saved': '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>',
+          'reposted': '<path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"></path>'
+        };
+        const textsByFilter = {
+          'mine': `لا توجد ${typeLabelAr}.`,
+          'liked': `لا توجد ${typeLabelAr} أعجبت بها.`,
+          'saved': `لا توجد ${typeLabelAr} محفوظة.`,
+          'reposted': `لا توجد ${typeLabelAr} أعدت نشرها.`
+        };
+        container.innerHTML = emptyStateHtml(iconsByFilter[currentFilter] || iconsByFilter['mine'], textsByFilter[currentFilter] || textsByFilter['mine']);
+        return;
+      }
+
+      if (currentContentType === 'posts') {
+        // عرض المنشورات كبطاقات كاملة (مثل الصفحة الرئيسية)
+        container.className = 'posts-container';
+        let html = '';
+        items.forEach((post) => {
+          html += renderPostCard(post);
+        });
+        container.innerHTML = html;
+      } else {
+        // عرض الريلزات أو فيديوهات التيوب كشبكة 3 أعمدة
+        container.className = 'content-grid';
+        let html = '';
+        items.forEach((data, index) => {
+          const likesCount = data.likedBy ? data.likedBy.length : (data.likes || 0);
+          const isOwner = isOwnProfile;
+          const contentId = data.id;
+
+          let menuHtml = '';
+          if (isOwner) {
+            const typeLabel = data.type === 'reel' ? 'الريلز' : data.type === 'video' ? 'الفيديو' : 'المنشور';
+            menuHtml = `
+              <div class="grid-item-menu">
+                <button class="menu-btn" onclick="event.stopPropagation(); toggleGridMenu('${data.type}-${contentId}')">⚡</button>
+                <div class="menu-dropdown" id="gridMenu-${data.type}-${contentId}">
+                  <button class="danger" onclick="event.stopPropagation(); deleteGridItem('${data.type}', '${contentId}')">🗑️ حذف ${typeLabel}</button>
+                </div>
+              </div>
+            `;
+          }
+
+          const isReel = data.type === 'reel';
+          const isVideo = data.type === 'video';
+          const mediaElement = (isReel || isVideo)
+            ? `<video src="${data.videoUrl}#t=0.1" preload="metadata" muted playsinline></video>`
+            : `<img src="${data.imageUrl}" alt="منشور" loading="lazy" onerror="this.parentElement.style.display='none'">`;
+
+          const clickHandler = isReel
+            ? `openReelsViewer(${index})`
+            : isVideo
+              ? `goToVideo('${contentId}')`
+              : `openPostViewer(${index})`;
+
+          const durationBadge = isVideo && data.duration
+            ? `<div style="position:absolute;bottom:6px;left:6px;z-index:5;background:rgba(0,0,0,0.8);color:#fff;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;">${formatDurationShort(data.duration)}</div>`
+            : '';
+
+          const overlayHtml = isVideo
+            ? `<div class="grid-item-overlay">
+                 <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+                 <span>${formatCountShort(data.views || 0)}</span>
+               </div>`
+            : `<div class="grid-item-overlay">
+                 <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                 <span>${likesCount}</span>
+               </div>`;
+
+          html += `
+            <div class="grid-item" onclick="${clickHandler}">
+              ${menuHtml}
+              ${mediaElement}
+              ${(isReel || isVideo) ? `<div class="grid-item-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>` : ''}
+              ${durationBadge}
+              ${overlayHtml}
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+        // تخزين العناصر للعارض
+        currentGridItems = items;
+      }
+    }
+
+    // ====== تنسيق مساعد لعدد المشاهدات ومدة الفيديو (تيوب) ======
+    function formatCountShort(n) {
+      n = Number(n) || 0;
+      if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+      return String(n);
+    }
+    function formatDurationShort(sec) {
+      sec = Math.round(Number(sec) || 0);
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      const pad = (x) => String(x).padStart(2, '0');
+      return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+    }
+
+    // ====== الانتقال لمشاهدة فيديو تيوب من صفحة البروفايل ======
+    function goToVideo(id) {
+      window.location.href = `videos.html?watch=${id}`;
+    }
+
+    // ====== بطاقة المنشور الكاملة (مطابقة للصفحة الرئيسية) ======
+    function renderPostCard(post) {
+      const postId = post.id;
+      const author = post.author || 'مجهول';
+      const authorUid = post.userId || '';
+      const initial = author.charAt(0).toUpperCase();
+      const isLiked = post.likedBy ? post.likedBy.includes(currentUser?.uid) : false;
+      const likesCount = post.likedBy ? post.likedBy.length : (post.likes || 0);
+      const isSaved = userSavedPosts.includes(postId);
+      const isPostReposted = userRepostedPosts.includes(postId);
+      const postRepostCount = typeof post.repostCount === 'number' ? post.repostCount : 0;
+      const isOwnPost = currentUser && authorUid === currentUser.uid;
+      const isFollowing = userFollowing.includes(authorUid);
+      const commentsCount = typeof post.commentsCount === 'number' ? post.commentsCount : null;
+
+      let timeStr = 'الآن';
+      if (post.createdAt) {
+        let date = post.createdAt;
+        if (date && typeof date.toDate === 'function') date = date.toDate();
+        else date = new Date(date);
+        timeStr = formatTimeAgo(date);
+      }
+
+      let imageHtml = '';
+      if (post.imageUrl) {
+        imageHtml = `<div class="post-image-container" ondblclick="handleDoubleTapLikePost('${sanitize(postId)}', this)">
+          <img src="${post.imageUrl}" alt="صورة المنشور" loading="lazy" onerror="this.parentElement.style.display='none'">
+          <svg class="dbl-tap-heart" id="dblHeartPost-${sanitize(postId)}" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </div>`;
+      }
+
+      let followBtnHtml = '';
+      if (!isOwnPost && authorUid) {
+        followBtnHtml = `<button type="button" class="btn-follow-mini ${isFollowing ? 'following' : ''}" data-uid="${sanitize(authorUid)}" onclick="toggleFollow('${sanitize(authorUid)}', this)">${isFollowing ? 'متابَع' : 'متابعة'}</button>`;
+      }
+
+      let menuItemsHtml = '';
+      if (isOwnPost) {
+        menuItemsHtml = `
+          <button onclick="copyPostLink('${sanitize(postId)}')">🔗 نسخ الرابط</button>
+          <button class="danger" onclick="openDeletePostModal('${sanitize(postId)}')">🗑️ حذف المنشور</button>`;
+      } else {
+        menuItemsHtml = `
+          <button onclick="copyPostLink('${sanitize(postId)}')">🔗 نسخ الرابط</button>
+          <button class="danger" onclick="reportPost('${sanitize(postId)}')">🚩 الإبلاغ عن المنشور</button>`;
+      }
+
+      const commentsLineHtml = commentsCount && commentsCount > 0
+        ? `<button type="button" class="view-comments-link" onclick="openCommentsModalPost('${sanitize(postId)}')">عرض جميع التعليقات (${commentsCount})</button>`
+        : '';
+
+      return `<article class="post-card" data-post-id="${sanitize(postId)}" id="post-${sanitize(postId)}">
+        <div class="post-header">
+          <div class="post-author">
+            <div class="user-avatar">${sanitize(initial)}</div>
+            <div class="author-info">
+              <div class="author-name-row">
+                <span class="author-name">${sanitize(author)}</span>
+                <span class="author-badge">Gamer</span>
+              </div>
+              <span class="post-time">${sanitize(timeStr)}</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${followBtnHtml}
+            <div class="post-menu-wrap">
+              <button class="btn-post-menu" onclick="togglePostMenu('${sanitize(postId)}')" title="خيارات">
+                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+              </button>
+              <div class="post-menu-dropdown" data-post-id="${sanitize(postId)}">${menuItemsHtml}</div>
+            </div>
+          </div>
+        </div>
+        ${imageHtml}
+        <div class="post-footer">
+          <div class="post-actions-left">
+            <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="toggleLikePost('${sanitize(postId)}')">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
+            <button class="action-btn" onclick="openCommentsModalPost('${sanitize(postId)}')">
+              <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            </button>
+            <button class="action-btn" onclick="sharePost('${sanitize(postId)}')">
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+            <button class="action-btn ${isPostReposted ? 'reposted' : ''}" id="repostBtnPost-${sanitize(postId)}" onclick="toggleRepostPost('${sanitize(postId)}')">
+              <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+              <span id="repostCountPost-${sanitize(postId)}">${postRepostCount}</span>
+            </button>
+          </div>
+          <button class="action-btn save-btn ${isSaved ? 'saved' : ''}" data-post-id="${sanitize(postId)}" onclick="toggleSavePost('${sanitize(postId)}', this)">
+            <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          </button>
+        </div>
+        <div class="likes-line" id="likesLinePost-${sanitize(postId)}"><span id="likeCountPost-${sanitize(postId)}">${likesCount}</span> إعجاب</div>
+        <div class="post-body">${post.content ? `<span class="author-name-inline">${sanitize(author)}</span>${sanitize(post.content)}` : ''}</div>
+        ${commentsLineHtml}
+      </article>`;
+    }
+
+    // ====== دوال التفاعل مع المنشورات ======
+    function togglePostMenu(postId) {
+      document.querySelectorAll('.post-menu-dropdown').forEach(el => {
+        if (el.dataset.postId !== postId) el.classList.remove('show');
+      });
+      const menu = document.querySelector(`.post-menu-dropdown[data-post-id="${postId}"]`);
+      if (!menu) return;
+      menu.classList.toggle('show');
+    }
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.post-menu-wrap')) {
+        document.querySelectorAll('.post-menu-dropdown').forEach(el => el.classList.remove('show'));
+      }
+    });
+
+    function copyPostLink(postId) {
+      const url = `${window.location.origin}${window.location.pathname.replace('profile.html','')}profile.html?uid=${targetUserId}#post-${postId}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => showToast('تم نسخ رابط المنشور')).catch(() => showToast('تعذر نسخ الرابط'));
+      } else { showToast('تعذر نسخ الرابط'); }
+    }
+
+    function reportPost(postId) { showToast('تم إرسال البلاغ، شكراً لك'); }
+
+    async function openDeletePostModal(postId) {
+      try {
+        const { db, doc, deleteDoc } = window.ZephyrProfile;
+        await deleteDoc(doc(db, "posts", postId));
+        showToast('تم حذف المنشور');
+        loadContent(); // إعادة تحميل المحتوى
+      } catch (e) {
+        console.error('خطأ الحذف:', e);
+        showToast('تعذر حذف المنشور.');
+      }
+    }
+
+    function formatTimeAgo(date) {
+      if (!(date instanceof Date) || isNaN(date)) return 'الآن';
+      const now = new Date();
+      const diffMs = now - date;
+      if (diffMs < 0) return 'في المستقبل';
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      const diffWeeks = Math.floor(diffDays / 7);
+      if (diffMins < 1) return 'الآن';
+      if (diffMins < 60) return 'منذ ' + diffMins + ' دقيقة';
+      if (diffHours < 24) return 'منذ ' + diffHours + ' ساعة';
+      if (diffDays < 7) return 'منذ ' + diffDays + ' يوم';
+      return 'منذ ' + diffWeeks + ' أسبوع';
+    }
+
+    async function toggleLikePost(postId) {
+      if (!currentUser) { showToast('يجب تسجيل الدخول للإعجاب.'); return; }
+      const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+      if (!postCard) return;
+      const likeBtn = postCard.querySelector('.action-btn:first-child');
+      const likeSpan = document.getElementById(`likeCountPost-${postId}`);
+      if (!likeBtn || !likeSpan) return;
+      const isLiked = likeBtn.classList.contains('liked');
+      let currentLikes = parseInt(likeSpan.textContent, 10) || 0;
+      if (isLiked) { likeBtn.classList.remove('liked'); currentLikes = Math.max(0, currentLikes - 1); }
+      else { likeBtn.classList.add('liked'); currentLikes += 1; }
+      likeSpan.textContent = currentLikes;
+
+      try {
+        const { db, doc, getDoc, updateDoc, arrayUnion, arrayRemove, increment } = window.ZephyrProfile;
+        const postRef = doc(db, "posts", postId);
+        const postSnap = await getDoc(postRef);
+        if (!postSnap.exists()) throw new Error('المنشور غير موجود');
+        const postData = postSnap.data();
+        const authorUid = postData.userId;
+        if (isLiked) {
+          await updateDoc(postRef, { likedBy: arrayRemove(currentUser.uid) });
+          if (authorUid) {
+            const userRef = doc(db, "users", authorUid);
+            await updateDoc(userRef, { totalLikes: increment(-1) });
+          }
+        } else {
+          await updateDoc(postRef, { likedBy: arrayUnion(currentUser.uid) });
+          if (authorUid) {
+            const userRef = doc(db, "users", authorUid);
+            await updateDoc(userRef, { totalLikes: increment(1) });
+          }
+        }
+      } catch (err) {
+        console.error('خطأ:', err);
+        if (isLiked) { likeBtn.classList.add('liked'); likeSpan.textContent = currentLikes + 1; }
+        else { likeBtn.classList.remove('liked'); likeSpan.textContent = Math.max(0, currentLikes - 1); }
+        showToast('تعذر تحديث الإعجابات.');
+      }
+    }
+
+    function handleDoubleTapLikePost(postId, containerEl) {
+      const heart = document.getElementById(`dblHeartPost-${postId}`);
+      if (heart) {
+        heart.classList.remove('burst');
+        void heart.offsetWidth;
+        heart.classList.add('burst');
+      }
+      const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+      const likeBtn = postCard ? postCard.querySelector('.action-btn:first-child') : null;
+      if (likeBtn && !likeBtn.classList.contains('liked')) toggleLikePost(postId);
+    }
+
+    async function toggleSavePost(postId, btnEl) {
+      if (!currentUser) { showToast('يجب تسجيل الدخول للحفظ.'); return; }
+      const isSaved = userSavedPosts.includes(postId);
+      try {
+        const { db, doc, updateDoc, arrayUnion, arrayRemove } = window.ZephyrProfile;
+        const myRef = doc(db, "users", currentUser.uid);
+        if (isSaved) {
+          await updateDoc(myRef, { savedPosts: arrayRemove(postId) });
+          userSavedPosts = userSavedPosts.filter(id => id !== postId);
+          showToast('تم إزالة المنشور من المحفوظات');
+        } else {
+          await updateDoc(myRef, { savedPosts: arrayUnion(postId) });
+          userSavedPosts.push(postId);
+          showToast('تم حفظ المنشور');
+        }
+        document.querySelectorAll(`.action-btn.save-btn[data-post-id="${postId}"]`).forEach(b => {
+          b.classList.toggle('saved', userSavedPosts.includes(postId));
+        });
+      } catch (e) {
+        console.error('خطأ الحفظ:', e);
+        showToast('تعذر تحديث الحفظ');
+      }
+    }
+
+    function sharePost(postId) { copyPostLink(postId); }
+
+    // ====== إعادة نشر المنشورات ======
+    async function toggleRepostPost(postId) {
+      if (!currentUser) { showToast('يجب تسجيل الدخول لإعادة النشر.'); return; }
+      if (isProcessingRepost) return;
+      isProcessingRepost = true;
+
+      const repostBtn = document.getElementById(`repostBtnPost-${postId}`);
+      const repostSpan = document.getElementById(`repostCountPost-${postId}`);
+      if (!repostBtn || !repostSpan) { isProcessingRepost = false; return; }
+
+      const isReposted = repostBtn.classList.contains('reposted');
+      let currentCount = parseInt(repostSpan.textContent, 10) || 0;
+
+      if (isReposted) {
+        repostBtn.classList.remove('reposted');
+        currentCount = Math.max(0, currentCount - 1);
+        userRepostedPosts = userRepostedPosts.filter(id => id !== postId);
+      } else {
+        repostBtn.classList.add('reposted');
+        currentCount += 1;
+        userRepostedPosts.push(postId);
+      }
+      repostSpan.textContent = currentCount;
+
+      try {
+        const { db, doc, updateDoc, arrayUnion, arrayRemove, increment } = window.ZephyrProfile;
+        const postRef = doc(db, "posts", postId);
+        const userRef = doc(db, "users", currentUser.uid);
+        await Promise.all([
+          updateDoc(postRef, { repostCount: increment(isReposted ? -1 : 1) }),
+          updateDoc(userRef, { repostedPosts: isReposted ? arrayRemove(postId) : arrayUnion(postId) })
+        ]);
+      } catch (e) {
+        console.error('خطأ إعادة النشر:', e);
+        if (isReposted) {
+          repostBtn.classList.add('reposted');
+          currentCount += 1;
+          userRepostedPosts.push(postId);
+        } else {
+          repostBtn.classList.remove('reposted');
+          currentCount = Math.max(0, currentCount - 1);
+          userRepostedPosts = userRepostedPosts.filter(id => id !== postId);
+        }
+        repostSpan.textContent = currentCount;
+        showToast('تعذر تحديث إعادة النشر');
+      } finally {
+        isProcessingRepost = false;
+      }
+    }
+
+    // ====== دوال التعليقات على المنشورات ======
+    function openCommentsModalPost(postId) {
+      activePostForComments = postId;
+      document.getElementById('commentsModal').classList.add('show');
+      document.getElementById('commentInput').value = '';
+      loadCommentsPost(postId);
+    }
+
+    function loadCommentsPost(postId) {
+      const { db, collection, query, orderBy, onSnapshot } = window.ZephyrProfile;
+      const list = document.getElementById('commentsList');
+      list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-body);">جاري التحميل...</div>';
+
+      const commentsRef = collection(db, "posts", postId, "comments");
+      const q = query(commentsRef, orderBy("createdAt", "asc"));
+
+      if (commentsUnsubscribe) commentsUnsubscribe();
+
+      commentsUnsubscribe = onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+          list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-body);">لا توجد تعليقات بعد. كُن الأول! 💬</div>';
+          return;
+        }
+        let html = '';
+        snapshot.forEach((doc) => {
+          const c = doc.data();
+          html += `
+            <div class="comment-item">
+              <span class="comment-user">@${sanitize(c.author)}</span>
+              <span class="comment-text">${sanitize(c.text)}</span>
+            </div>
+          `;
+        });
+        list.innerHTML = html;
+        list.scrollTop = list.scrollHeight;
+      });
+    }
+
+    async function sendComment() {
+      const input = document.getElementById('commentInput');
+      const text = input.value.trim();
+      const targetId = activePostForComments || activeReelForComments;
+      const collectionName = activePostForComments ? 'posts' : 'reels';
+      if (!text || !targetId || !currentUser) return;
+
+      input.value = '';
+      try {
+        const { db, collection, addDoc, doc, updateDoc, increment } = window.ZephyrProfile;
+        const authorName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Gamer';
+        await addDoc(collection(db, collectionName, targetId, "comments"), {
+          author: authorName,
+          text: text,
+          createdAt: new Date().toISOString()
+        });
+        // زيادة عدد التعليقات
+        const ref = doc(db, collectionName, targetId);
+        await updateDoc(ref, { commentsCount: increment(1) });
+      } catch (e) {
+        console.error("خطأ إرسال التعليق:", e);
+        showToast('فشل إرسال التعليق');
+      }
+    }
+
+    function closeCommentsModal(e) {
+      if (!e || e.target.id === 'commentsModal' || e.type === 'click') {
+        document.getElementById('commentsModal').classList.remove('show');
+        if (commentsUnsubscribe) commentsUnsubscribe();
+        activePostForComments = null;
+        activeReelForComments = null;
+      }
+    }
+
+    // ====== عارض الريلزات ======
+    function openReelsViewer(startIndex) {
+      const modal = document.getElementById('reelsViewerModal');
+      const container = document.getElementById('reelsViewerContainer');
+
+      const reelItems = currentGridItems.filter(item => item.type === 'reel');
+      if (reelItems.length === 0) {
+        showToast('لا توجد ريلزات لعرضها');
+        return;
+      }
+
+      const actualIndex = currentGridItems.findIndex((item, idx) => item.type === 'reel' && idx >= startIndex);
+      const startIdx = actualIndex !== -1 ? actualIndex : 0;
+
+      viewerItems = reelItems;
+      viewerCurrentIndex = startIdx;
+
+      let html = '';
+      viewerItems.forEach((data, i) => {
+        html += buildReelViewerItem(data, i);
+      });
+      container.innerHTML = html;
+
+      modal.classList.add('active');
+      document.body.classList.add('modal-open');
+
+      const targetItem = container.querySelector(`.reel-viewer-item[data-index="${startIdx}"]`);
+      if (targetItem) targetItem.scrollIntoView({ behavior: 'instant', block: 'start' });
+
+      setupViewerObserver();
+      applyViewerMuteState();
+    }
+
+    function buildReelViewerItem(data, index) {
+      const id = data.id;
+      const author = sanitize(data.author || 'مجهول');
+      const authorId = data.userId || '';
+      const caption = sanitize(data.caption || '');
+      const videoUrl = data.videoUrl;
+      const likesCount = data.likedBy ? data.likedBy.length : (data.likes || 0);
+      const repostCount = data.repostCount || 0;
+      const isLiked = userLikedReels.includes(id);
+      const isSaved = userSavedReels.includes(id);
+      const isReposted = userRepostedReels.includes(id);
+      const isFollowing = userFollowing.includes(authorId);
+      const isSelf = authorId === currentUser.uid;
+      const initial = author.charAt(0).toUpperCase();
+
+      return `
+        <div class="reel-viewer-item" data-index="${index}" data-id="${id}" data-author-id="${authorId}">
+          <video class="reel-video" src="${videoUrl}" loop playsinline muted preload="metadata" ontimeupdate="updateViewerProgress('${id}', this)"></video>
+          <div class="progress-container-top">
+            <div class="progress-bar-top" id="viewerProgress-${id}"></div>
+          </div>
+          <button class="mute-btn" onclick="event.stopPropagation(); toggleViewerMute();">
+            <svg class="viewerMuteIcon" id="viewerMuteIcon-${id}" viewBox="0 0 24 24"><path d="M3 10v4h4l5 5V5L7 10H3z"/></svg>
+          </button>
+          <div class="play-pause-icon" id="viewerPlayIcon-${id}">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+          <div class="double-tap-heart" id="viewerDoubleHeart-${id}">
+            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          </div>
+          <div class="reel-click-area" data-id="${id}" onclick="toggleViewerPlay('${id}')" ondblclick="handleViewerDoubleTap('${id}')"></div>
+
+          <div class="reel-overlay">
+            <div class="reel-info">
+              <div class="author-name-row">
+                <span class="author-name" onclick="goToProfile('${authorId}')">@${author}</span>
+                <span class="author-badge">Gamer</span>
+              </div>
+              <div class="reel-caption">${caption}</div>
+              ${isSelf ? `
+                <button class="delete-btn" onclick="deleteViewerReel('${id}')">
+                  <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                  حذف
+                </button>
+              ` : ''}
+            </div>
+            <div class="reel-actions">
+              <div class="avatar-follow-container">
+                <div class="reel-avatar" onclick="goToProfile('${authorId}')">${initial}</div>
+                ${(!isSelf && !isFollowing) ? `
+                  <button class="follow-btn-only" onclick="followUser('${authorId}')">+</button>
+                ` : ''}
+              </div>
+              <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="toggleViewerLike('${id}', '${authorId}')">
+                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <span id="viewerLikesCount-${id}">${likesCount}</span>
+              </button>
+              <button class="action-btn" onclick="openViewerComments('${id}')">
+                <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                <span>تعليق</span>
+              </button>
+              <button class="action-btn ${isSaved ? 'saved' : ''}" onclick="toggleViewerSave('${id}')">
+                <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                <span id="viewerSaveTxt-${id}">${isSaved ? 'محفوظ' : 'حفظ'}</span>
+              </button>
+              <button class="action-btn ${isReposted ? 'reposted' : ''}" onclick="toggleViewerRepost('${id}')">
+                <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                <span id="viewerRepostCount-${id}">${repostCount}</span>
+              </button>
+              <button class="action-btn" onclick="shareReel('${videoUrl}')">
+                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                <span>مشاركة</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function setupViewerObserver() {
+      if (viewerObserver) viewerObserver.disconnect();
+      const videos = document.querySelectorAll('#reelsViewerContainer .reel-video');
+      viewerObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const video = entry.target;
+          if (entry.isIntersecting) {
+            video.currentTime = 0;
+            video.muted = isGloballyMuted;
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        });
+      }, { threshold: 0.6 });
+      videos.forEach(v => viewerObserver.observe(v));
+    }
+
+    function applyViewerMuteState() {
+      const videos = document.querySelectorAll('#reelsViewerContainer .reel-video');
+      videos.forEach(v => { v.muted = isGloballyMuted; });
+      const muteIconPath = isGloballyMuted
+        ? '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>'
+        : '<path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+      document.querySelectorAll('.viewerMuteIcon').forEach(icon => { icon.innerHTML = muteIconPath; });
+    }
+
+    function toggleViewerMute() {
+      isGloballyMuted = !isGloballyMuted;
+      applyViewerMuteState();
+    }
+
+    function toggleViewerPlay(id) {
+      const item = document.querySelector(`.reel-viewer-item[data-id="${id}"]`);
+      if (!item) return;
+      const video = item.querySelector('.reel-video');
+      const icon = document.getElementById(`viewerPlayIcon-${id}`);
+      if (video.paused) {
+        video.play();
+        if (icon) icon.classList.add('active');
+        setTimeout(() => { if (icon) icon.classList.remove('active'); }, 500);
+      } else {
+        video.pause();
+        if (icon) icon.classList.add('active');
+        setTimeout(() => { if (icon) icon.classList.remove('active'); }, 500);
+      }
+    }
+
+    function handleViewerDoubleTap(id) {
+      const heart = document.getElementById(`viewerDoubleHeart-${id}`);
+      if (heart) {
+        heart.classList.remove('animate');
+        void heart.offsetWidth;
+        heart.classList.add('animate');
+      }
+      const item = document.querySelector(`.reel-viewer-item[data-id="${id}"]`);
+      const authorId = item ? item.getAttribute('data-author-id') : null;
+      const likeBtn = item ? item.querySelector('.action-btn:first-child') : null;
+      if (likeBtn && !likeBtn.classList.contains('liked')) {
+        toggleViewerLike(id, authorId);
+      }
+    }
+
+    function updateViewerProgress(id, video) {
+      const progressBar = document.getElementById(`viewerProgress-${id}`);
+      if (progressBar && video.duration) {
+        const percent = (video.currentTime / video.duration) * 100;
+        progressBar.style.width = percent + '%';
+      }
+    }
+
+    // ====== دوال التفاعل في العارض ======
+    async function toggleViewerLike(id, authorId) {
+      if (isProcessingLike) return;
+      if (!currentUser) return;
+      isProcessingLike = true;
+
+      const item = document.querySelector(`.reel-viewer-item[data-id="${id}"]`);
+      if (!item) { isProcessingLike = false; return; }
+      const likeBtn = item.querySelector('.action-btn:first-child');
+      const likesSpan = document.getElementById(`viewerLikesCount-${id}`);
+      if (!likeBtn || !likesSpan) { isProcessingLike = false; return; }
+
+      const isLiked = likeBtn.classList.contains('liked');
+      let currentLikes = parseInt(likesSpan.textContent, 10) || 0;
+
+      if (isLiked) {
+        likeBtn.classList.remove('liked');
+        currentLikes = Math.max(0, currentLikes - 1);
+        userLikedReels = userLikedReels.filter(itemId => itemId !== id);
+      } else {
+        likeBtn.classList.add('liked');
+        currentLikes += 1;
+        userLikedReels.push(id);
+      }
+      likesSpan.textContent = currentLikes;
+
+      try {
+        const { db, doc, updateDoc, arrayUnion, arrayRemove, increment } = window.ZephyrProfile;
+        const reelRef = doc(db, "reels", id);
+        const userRef = doc(db, "users", currentUser.uid);
+
+        if (authorId && authorId !== currentUser.uid) {
+          await ensureUserDocument(authorId);
+        }
+
+        const operations = [];
+        if (isLiked) {
+          operations.push(updateDoc(reelRef, { likedBy: arrayRemove(currentUser.uid) }));
+          operations.push(updateDoc(userRef, { likedReels: arrayRemove(id) }));
+          if (authorId && authorId !== currentUser.uid) {
+            operations.push(updateDoc(doc(db, "users", authorId), { totalLikes: increment(-1) }));
+          }
+        } else {
+          operations.push(updateDoc(reelRef, { likedBy: arrayUnion(currentUser.uid) }));
+          operations.push(updateDoc(userRef, { likedReels: arrayUnion(id) }));
+          if (authorId && authorId !== currentUser.uid) {
+            operations.push(updateDoc(doc(db, "users", authorId), { totalLikes: increment(1) }));
+          }
+        }
+        await Promise.all(operations);
+        // تحديث العدد في الشبكة أيضاً
+        updateGridLikeCount(id, currentLikes);
+      } catch (err) {
+        console.error("خطأ الإعجاب:", err);
+        if (isLiked) {
+          likeBtn.classList.add('liked');
+          likesSpan.textContent = currentLikes + 1;
+          userLikedReels.push(id);
+        } else {
+          likeBtn.classList.remove('liked');
+          likesSpan.textContent = Math.max(0, currentLikes - 1);
+          userLikedReels = userLikedReels.filter(itemId => itemId !== id);
+        }
+        showToast('تعذر تحديث الإعجاب');
+      } finally {
+        isProcessingLike = false;
+      }
+    }
+
+    function updateGridLikeCount(id, count) {
+      const gridItem = document.querySelector(`.grid-item[data-id="${id}"]`);
+      if (gridItem) {
+        const span = gridItem.querySelector('.grid-item-overlay span');
+        if (span) span.textContent = count;
+      }
+    }
+
+    async function toggleViewerSave(id) {
+      if (isProcessingSave) return;
+      if (!currentUser) return;
+      isProcessingSave = true;
+
+      const item = document.querySelector(`.reel-viewer-item[data-id="${id}"]`);
+      if (!item) { isProcessingSave = false; return; }
+      const saveBtn = item.querySelector('.action-btn:nth-child(4)');
+      const saveTxt = document.getElementById(`viewerSaveTxt-${id}`);
+      if (!saveBtn || !saveTxt) { isProcessingSave = false; return; }
+
+      const isSaved = saveBtn.classList.contains('saved');
+
+      if (isSaved) {
+        saveBtn.classList.remove('saved');
+        saveTxt.textContent = 'حفظ';
+        userSavedReels = userSavedReels.filter(itemId => itemId !== id);
+      } else {
+        saveBtn.classList.add('saved');
+        saveTxt.textContent = 'محفوظ';
+        userSavedReels.push(id);
+      }
+
+      try {
+        const { db, doc, updateDoc, arrayUnion, arrayRemove } = window.ZephyrProfile;
+        const userRef = doc(db, "users", currentUser.uid);
+        if (isSaved) {
+          await updateDoc(userRef, { savedReels: arrayRemove(id) });
+        } else {
+          await updateDoc(userRef, { savedReels: arrayUnion(id) });
+          showToast('تم الحفظ 📌');
+        }
+      } catch (err) {
+        console.error("خطأ حفظ الفيديو:", err);
+        if (isSaved) {
+          saveBtn.classList.add('saved');
+          saveTxt.textContent = 'محفوظ';
+          userSavedReels.push(id);
+        } else {
+          saveBtn.classList.remove('saved');
+          saveTxt.textContent = 'حفظ';
+          userSavedReels = userSavedReels.filter(itemId => itemId !== id);
+        }
+        showToast('تعذر تحديث الحفظ');
+      } finally {
+        isProcessingSave = false;
+      }
+    }
+
+    async function toggleViewerRepost(id) {
+      if (isProcessingRepost) return;
+      if (!currentUser) return;
+      isProcessingRepost = true;
+
+      const item = document.querySelector(`.reel-viewer-item[data-id="${id}"]`);
+      if (!item) { isProcessingRepost = false; return; }
+      const repostBtn = item.querySelector('.action-btn:nth-child(5)');
+      const repostSpan = document.getElementById(`viewerRepostCount-${id}`);
+      if (!repostBtn || !repostSpan) { isProcessingRepost = false; return; }
+
+      const isReposted = repostBtn.classList.contains('reposted');
+      let currentCount = parseInt(repostSpan.textContent, 10) || 0;
+
+      if (isReposted) {
+        repostBtn.classList.remove('reposted');
+        currentCount = Math.max(0, currentCount - 1);
+        userRepostedReels = userRepostedReels.filter(itemId => itemId !== id);
+      } else {
+        repostBtn.classList.add('reposted');
+        currentCount += 1;
+        userRepostedReels.push(id);
+      }
+      repostSpan.textContent = currentCount;
+
+      try {
+        const { db, doc, updateDoc, arrayUnion, arrayRemove, increment } = window.ZephyrProfile;
+        const reelRef = doc(db, "reels", id);
+        const userRef = doc(db, "users", currentUser.uid);
+
+        await Promise.all([
+          updateDoc(reelRef, { repostCount: increment(isReposted ? -1 : 1) }),
+          updateDoc(userRef, { repostedReels: isReposted ? arrayRemove(id) : arrayUnion(id) })
+        ]);
+      } catch (err) {
+        console.error("خطأ إعادة النشر:", err);
+        if (isReposted) {
+          repostBtn.classList.add('reposted');
+          repostSpan.textContent = currentCount + 1;
+          userRepostedReels.push(id);
+        } else {
+          repostBtn.classList.remove('reposted');
+          repostSpan.textContent = Math.max(0, currentCount - 1);
+          userRepostedReels = userRepostedReels.filter(itemId => itemId !== id);
+        }
+        showToast('تعذرت إعادة النشر');
+      } finally {
+        isProcessingRepost = false;
+      }
+    }
+
+    function openViewerComments(reelId) {
+      activeReelForComments = reelId;
+      document.getElementById('commentsModal').classList.add('show');
+      document.getElementById('commentInput').value = '';
+      // استخدام نفس دالة التحميل ولكن مع reels
+      const { db, collection, query, orderBy, onSnapshot } = window.ZephyrProfile;
+      const list = document.getElementById('commentsList');
+      list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-body);">جاري التحميل...</div>';
+
+      const commentsRef = collection(db, "reels", reelId, "comments");
+      const q = query(commentsRef, orderBy("createdAt", "asc"));
+
+      if (commentsUnsubscribe) commentsUnsubscribe();
+
+      commentsUnsubscribe = onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+          list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-body);">لا توجد تعليقات بعد. كُن الأول! 💬</div>';
+          return;
+        }
+        let html = '';
+        snapshot.forEach((doc) => {
+          const c = doc.data();
+          html += `
+            <div class="comment-item">
+              <span class="comment-user">@${sanitize(c.author)}</span>
+              <span class="comment-text">${sanitize(c.text)}</span>
+            </div>
+          `;
+        });
+        list.innerHTML = html;
+        list.scrollTop = list.scrollHeight;
+      });
+    }
+
+    function closeReelsViewer() {
+      document.getElementById('reelsViewerModal').classList.remove('active');
+      document.body.classList.remove('modal-open');
+      document.getElementById('reelsViewerContainer').innerHTML = '';
+      if (viewerObserver) {
+        viewerObserver.disconnect();
+        viewerObserver = null;
+      }
+    }
+
+    async function deleteViewerReel(reelId) {
+      if (!confirm('هل أنت متأكد من حذف هذا الريلز؟')) return;
+      try {
+        const { db, doc, deleteDoc } = window.ZephyrProfile;
+        await deleteDoc(doc(db, "reels", reelId));
+        showToast('✅ تم حذف الريلز');
+        closeReelsViewer();
+        const cacheKey = `${targetUserId}_${currentContentType}_${currentFilter}`;
+        delete cache[cacheKey];
+        loadContent();
+      } catch (err) {
+        console.error('خطأ الحذف:', err);
+        showToast('تعذر الحذف.');
+      }
+    }
+
+    function shareReel(videoUrl) {
+      if (navigator.share) {
+        navigator.share({ title: 'ZEPHYR Reel', url: videoUrl }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(videoUrl).then(() => showToast('✅ تم نسخ رابط الفيديو!'));
+      }
+    }
+
+    function goToProfile(userId) {
+      if (!userId) return;
+      window.location.href = `profile.html?uid=${userId}`;
+    }
+
+    // ====== عرض قائمة المتابعين ======
+    async function showFollowList(type) {
+      const modal = document.getElementById('followListModal');
+      const container = document.getElementById('followListContainer');
+      const title = document.getElementById('followListTitle');
+      modal.classList.add('active');
+
+      title.textContent = type === 'followers' ? '👥 المتابعون' : '📌 الذين أتابعهم';
+      container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">جاري التحميل...</div>';
+
+      const { db, doc, getDoc, updateDoc } = window.ZephyrProfile;
+      const userRef = doc(db, "users", targetUserId);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">لا يوجد مستخدم</div>';
+        return;
+      }
+
+      const data = userSnap.data();
+      let userIds = type === 'followers' ? (data.followers || []) : (data.following || []);
+      userIds = [...new Set(userIds)];
+
+      if (userIds.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">لا يوجد أحد</div>';
+        return;
+      }
+
+      const usersData = [];
+      for (const uid of userIds) {
+        const uDoc = await getDoc(doc(db, "users", uid));
+        if (uDoc.exists()) {
+          const uData = uDoc.data();
+          usersData.push({ uid, ...uData });
+        }
+      }
+
+      let html = '';
+      for (const user of usersData) {
+        const isMe = user.uid === currentUser.uid;
+        const isFollowing = userFollowing.includes(user.uid);
+        const isFollower = (user.following || []).includes(currentUser.uid);
+        const isFriend = isFollowing && isFollower;
+
+        let buttonsHtml = '';
+
+        if (!isMe) {
+          if (isFriend) {
+            buttonsHtml = `
+              <button class="message" onclick="event.stopPropagation(); goToChat('${user.uid}')">💬</button>
+              <button class="unfollow" onclick="event.stopPropagation(); unfollowUser('${user.uid}')">✖</button>
+            `;
+          } else if (isFollowing) {
+            buttonsHtml = `<button class="unfollow" onclick="event.stopPropagation(); unfollowUser('${user.uid}')">✖ إزالة</button>`;
+          } else if (isFollower) {
+            buttonsHtml = `<button onclick="event.stopPropagation(); followUser('${user.uid}')">↩ رد</button>`;
+          } else {
+            buttonsHtml = `<button onclick="event.stopPropagation(); followUser('${user.uid}')">➕ متابعة</button>`;
+          }
+        }
+
+        html += `
+          <div class="follow-user-item" onclick="closeFollowListModal(); goToProfile('${user.uid}')">
+            <div class="follow-user-info">
+              <div class="follow-user-avatar">${sanitize(user.displayName?.charAt(0).toUpperCase() || '؟')}</div>
+              <div style="display:flex; flex-direction:column;">
+                <span class="follow-user-name">@${sanitize(user.displayName || 'مستخدم')}</span>
+              </div>
+            </div>
+            <div class="follow-user-action">${buttonsHtml}</div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    function closeFollowListModal() {
+      document.getElementById('followListModal').classList.remove('active');
+    }
+
+    // ====== مودال تعديل الملف الشخصي ======
+    function openEditProfileModal() {
+      document.getElementById('newDisplayName').value = targetUserData?.displayName || '';
+      document.getElementById('newBio').value = targetUserData?.bio || '';
+      document.getElementById('editProfileStatus').textContent = '';
+      document.getElementById('editProfileModal').classList.add('show');
+    }
+
+    function closeEditProfileModal() {
+      document.getElementById('editProfileModal').classList.remove('show');
+    }
+
+    function shareMyProfile() {
+      const url = `${window.location.origin}${window.location.pathname}?uid=${currentUser.uid}`;
+      if (navigator.share) {
+        navigator.share({ title: 'ZEPHYR Profile', url }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(url).then(() => showToast('✅ تم نسخ رابط الملف الشخصي!'));
+      }
+    }
+
+    // ====== تحديث الاسم والنبذة ======
+    async function updateName() {
+      const newName = document.getElementById('newDisplayName').value.trim();
+      const newBio = document.getElementById('newBio').value.trim();
+      const status = document.getElementById('editProfileStatus');
+      const saveBtn = document.getElementById('btnSaveProfile');
+
+      if (!newName) {
+        status.textContent = '⚠️ الرجاء إدخال اسم صحيح.';
+        status.style.color = '#fca5a5';
+        return;
+      }
+
+      saveBtn.disabled = true;
+      status.textContent = '⏳ جاري الحفظ...';
+      status.style.color = 'var(--primary)';
+      try {
+        const sanitizedName = sanitize(newName);
+        const sanitizedBio = sanitize(newBio);
+        await window.ZephyrProfile.updateProfile(currentUser, { displayName: sanitizedName });
+        const { db, doc, updateDoc } = window.ZephyrProfile;
+        await updateDoc(doc(db, "users", currentUser.uid), { displayName: sanitizedName, bio: sanitizedBio });
+        currentUser.displayName = sanitizedName;
+        status.textContent = '✅ تم التحديث بنجاح!';
+        status.style.color = '#6ee7b7';
+        document.getElementById('userNameDisplay').textContent = '@' + sanitizedName;
+        document.getElementById('avatarLetter').textContent = (sanitizedName.charAt(0) || '؟').toUpperCase();
+        const bioEl = document.getElementById('userBioDisplay');
+        bioEl.textContent = sanitizedBio;
+        bioEl.style.display = sanitizedBio ? 'block' : 'none';
+        setTimeout(() => {
+          closeEditProfileModal();
+          saveBtn.disabled = false;
+        }, 700);
+      } catch (e) {
+        console.error(e);
+        status.textContent = '❌ حدث خطأ أثناء التحديث.';
+        status.style.color = '#fca5a5';
+        saveBtn.disabled = false;
+      }
+    }
+
+    // ====== تسجيل الخروج ======
+    async function handleSignOut() {
+      try {
+        await window.ZephyrProfile.signOut(window.ZephyrProfile.auth);
+        window.location.replace('login.html');
+      } catch (e) {
+        console.error("خطأ تسجيل الخروج:", e);
+        showToast('حدث خطأ أثناء تسجيل الخروج.');
+      }
+    }
+
+    // ====== إخفاء الشريط السفلي عند التمرير ======
+    let lastScrollY = 0;
+    window.addEventListener('scroll', () => {
+      const bottomNav = document.getElementById('bottomNav');
+      if (!bottomNav) return;
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        bottomNav.classList.add('hidden');
+      } else {
+        bottomNav.classList.remove('hidden');
+      }
+      lastScrollY = currentScrollY;
+    });
+
+    // ====== مودال حذف المنشور ======
+    // (تم إضافتها في HTML)
+    // سنضيفها في الـ HTML لاحقاً
+
+    // ====== ربط الدوال العامة ======
+    window.switchTab = switchTab;
+    window.followUser = followUser;
+    window.unfollowUser = unfollowUser;
+    window.goToChat = goToChat;
+    window.openEditProfileModal = openEditProfileModal;
+    window.closeEditProfileModal = closeEditProfileModal;
+    window.shareMyProfile = shareMyProfile;
+    window.updateName = updateName;
+    window.handleSignOut = handleSignOut;
+    window.openReelsViewer = openReelsViewer;
+    window.closeReelsViewer = closeReelsViewer;
+    window.toggleGridMenu = toggleGridMenu;
+    window.deleteGridItem = deleteGridItem;
+    window.showFollowList = showFollowList;
+    window.closeFollowListModal = closeFollowListModal;
+    window.goToProfile = goToProfile;
+    window.goToVideo = goToVideo;
+    window.closeCommentsModal = closeCommentsModal;
+    window.sendComment = sendComment;
+    window.shareReel = shareReel;
+    window.toggleViewerMute = toggleViewerMute;
+    window.toggleViewerPlay = toggleViewerPlay;
+    window.handleViewerDoubleTap = handleViewerDoubleTap;
+    window.updateViewerProgress = updateViewerProgress;
+    window.toggleViewerLike = toggleViewerLike;
+    window.toggleViewerSave = toggleViewerSave;
+    window.toggleViewerRepost = toggleViewerRepost;
+    window.openViewerComments = openViewerComments;
+    window.deleteViewerReel = deleteViewerReel;
+    window.openCommentsModalPost = openCommentsModalPost;
+    window.toggleLikePost = toggleLikePost;
+    window.handleDoubleTapLikePost = handleDoubleTapLikePost;
+    window.toggleSavePost = toggleSavePost;
+    window.toggleRepostPost = toggleRepostPost;
+    window.sharePost = sharePost;
+    window.openDeletePostModal = openDeletePostModal;
+    window.togglePostMenu = togglePostMenu;
+    window.copyPostLink = copyPostLink;
+    window.reportPost = reportPost;
+
+    // دوال الشبكة للريلزات
+    function toggleGridMenu(menuId) {
+      document.querySelectorAll('.menu-dropdown').forEach(el => {
+        if (el.id !== menuId) el.classList.remove('show');
+      });
+      const menu = document.getElementById(menuId);
+      if (menu) menu.classList.toggle('show');
+    }
+
+    async function deleteGridItem(type, id) {
+      const typeLabel = type === 'reel' ? 'الريلز' : type === 'video' ? 'الفيديو' : 'المنشور';
+      if (!confirm(`هل أنت متأكد من حذف هذا ${typeLabel}؟`)) return;
+      try {
+        const { db, doc, deleteDoc } = window.ZephyrProfile;
+        const collectionName = type === 'reel' ? 'reels' : type === 'video' ? 'videos' : 'posts';
+        await deleteDoc(doc(db, collectionName, id));
+        showToast(`✅ تم حذف ${typeLabel}`);
+        const cacheKey = `${targetUserId}_${currentContentType}_${currentFilter}`;
+        delete cache[cacheKey];
+        loadContent();
+        if (document.getElementById('reelsViewerModal').classList.contains('active')) {
+          closeReelsViewer();
+        }
+      } catch (err) {
+        console.error('خطأ الحذف:', err);
+        showToast('تعذر الحذف.');
+      }
+    }
+
+    // ====== إضافة مودال الحذف إلى HTML ======
+    // سيتم إضافته في نهاية الـ body
+  </script>
+
+
+</body>
+</html>
